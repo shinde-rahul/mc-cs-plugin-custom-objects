@@ -31,9 +31,7 @@ jobs:
           extensions: mbstring, intl, pdo_mysql
 
       - name: Composer install
-        uses: docker://composer:1.9.1
-        with:
-          args: install
+        uses: "ramsey/composer-install@v3"
 
       - name: Setup Composer
         run: |
