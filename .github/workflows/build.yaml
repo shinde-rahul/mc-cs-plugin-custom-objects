@@ -95,7 +95,7 @@ jobs:
            github.ref == 'refs/heads/master' ||
            github.ref == 'refs/heads/preproduction' ||
            github.ref == 'refs/heads/hotfix' ||
-           github.ref =~ '^refs/heads/epic-.*$')
+           github.ref == '^refs/heads/epic-.*$')
         run: |
           # Automerge steps here
 
