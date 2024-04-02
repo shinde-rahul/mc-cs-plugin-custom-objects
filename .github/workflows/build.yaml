@@ -37,6 +37,7 @@ jobs:
 
       - name: Build
         run: |
+          mkdir -p app/config
           echo "<?php
           \$hostedParameters = array_merge(
               \$hostedParameters,
@@ -44,7 +45,7 @@ jobs:
                   'private_cloud_plugin_deny_list'  => [],
                   'private_cloud_plugin_allow_list' => [],
               ]
-          );" > app/config/hosted_local.php
+          );" >> app/config/hosted_local.php
 
           echo "<?php
             \$parameters = array(
@@ -58,7 +59,7 @@ jobs:
                 'hosted_plan' => 'pro',
                 'custom_objects_enabled' => true,
                 'create_custom_field_in_background' => false,
-            );" > app/config/local.php
+            );" >> app/config/local.php
           composer validate --no-check-all --strict || (echo "Composer failed validation. If the lock file is out of sync you can try running 'composer update --lock'"; exit 1)
           composer install --ansi
 
