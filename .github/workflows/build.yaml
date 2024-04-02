@@ -1,0 +1,110 @@
+name: Mautic Build and Test
+
+on:
+  push:
+    branches:
+      - development
+      - beta
+      - staging
+      # Add other branches as needed
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    
+    env:
+      SUBMODULE_NAME: VarsityBundle
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: mbstring, intl, pdo_mysql
+
+      - name: Setup Composer
+        run: |
+          composer self-update
+          composer config --global github-oauth.github.com ${{ secrets.GITHUB_COMPOSER_TOKEN }}
+
+      - name: Build
+        run: |
+          echo "<?php
+          \$hostedParameters = array_merge(
+              \$hostedParameters,
+              [
+                  'private_cloud_plugin_deny_list'  => [],
+                  'private_cloud_plugin_allow_list' => [],
+              ]
+          );" > app/config/hosted_local.php
+
+          echo "<?php
+            \$parameters = array(
+                'db_driver' => 'pdo_mysql',
+                'db_host' => '127.0.0.1',
+                'db_port' => 3306,
+                'db_name' => 'mautictest',
+                'db_user' => 'travis',
+                'db_password' => '',
+                'db_table_prefix' => '',
+                'hosted_plan' => 'pro',
+                'custom_objects_enabled' => true,
+                'create_custom_field_in_background' => false,
+            );" > app/config/local.php
+          composer validate --no-check-all --strict || (echo "Composer failed validation. If the lock file is out of sync you can try running 'composer update --lock'"; exit 1)
+          composer install --ansi
+
+      - name: PHPUnit and Sonar Scan
+        run: |
+          php --version
+          mysql -h 127.0.0.1 -e 'CREATE DATABASE mautictest; CREATE USER travis@"%"; GRANT ALL on mautictest.* to travis@"%"; GRANT SUPER,PROCESS ON *.* TO travis@"%";'
+          export SYMFONY_ENV="test"
+          mkdir -p var/cache/coverage-report
+          APP_DEBUG=0 php -dpcov.enabled=1 -dpcov.directory=. -dpcov.exclude="~tests|themes|vendor~" bin/phpunit -d memory_limit=3G --bootstrap vendor/autoload.php --configuration plugins/${SUBMODULE_NAME}/phpunit.xml --disallow-test-output --coverage-clover var/cache/coverage-report/clover.xml --testsuite=all
+
+      - name: Static Analysis
+        run: |
+          export COMPOSER_ALLOW_SUPERUSER=1
+          composer phpstan -- --no-progress
+
+      - name: CS Fixer
+        run: |
+          export COMPOSER_ALLOW_SUPERUSER=1
+          composer csfixer
+
+      - name: Sonar Scan
+        run: |
+          # SonarQube scanning steps here
+
+      - name: Quality Gate
+        run: |
+          # Quality gate checks here
+
+      - name: Automerge
+        if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/staging' ||
+           github.ref == 'refs/heads/master' ||
+           github.ref == 'refs/heads/preproduction' ||
+           github.ref == 'refs/heads/hotfix' ||
+           github.ref =~ '^refs/heads/epic-.*$')
+        run: |
+          # Automerge steps here
+
+      - name: Set Revision
+        if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/development' ||
+           github.ref == 'refs/heads/beta' ||
+           github.ref == 'refs/heads/staging')
+        run: |
+          # Set revision steps here
+
