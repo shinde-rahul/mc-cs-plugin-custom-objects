@@ -30,6 +30,11 @@ jobs:
           php-version: '8.0'
           extensions: mbstring, intl, pdo_mysql
 
+      - name: Install dependencies
+        uses: php-actions/composer@master
+        with:
+          php_version: '8.0'
+
       - name: Setup Composer
         run: |
           composer self-update
