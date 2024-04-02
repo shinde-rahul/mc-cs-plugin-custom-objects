@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      SUBMODULE_NAME: VarsityBundle
+      SUBMODULE_NAME: CustomObjectsBundle
 
     steps:
       - name: Checkout code
@@ -33,7 +33,7 @@ jobs:
       - name: Setup Composer
         run: |
           composer self-update
-          composer config --global github-oauth.github.com ${{ secrets.GITHUB_COMPOSER_TOKEN }}
+          # composer config --global github-oauth.github.com ${{ secrets.GITHUB_COMPOSER_TOKEN }}
 
       - name: Build
         run: |
