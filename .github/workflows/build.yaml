@@ -40,7 +40,7 @@ jobs:
           extensions: mbstring, intl, pdo_mysql
 
       - name: Install Composer dependencies
-        run: composer install
+        run: composer install --no-interaction --no-progress
 
       - name: Setup Composer
         run: |
