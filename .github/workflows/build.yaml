@@ -36,8 +36,13 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.0'
+          php-version: '7.4'
           extensions: mbstring, intl, pdo_mysql
+
+      - name: Clear Composer Cache and Update
+        run: | 
+          composer clear-cache
+          composer update
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --no-progress
