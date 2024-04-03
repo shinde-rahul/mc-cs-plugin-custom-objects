@@ -15,6 +15,15 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: mautictest
+          MYSQL_USER: travis
+          MYSQL_PASSWORD: ''
+
     env:
       SUBMODULE_NAME: CustomObjectsBundle
 
@@ -29,6 +38,9 @@ jobs:
         with:
           php-version: '8.0'
           extensions: mbstring, intl, pdo_mysql
+
+      - name: Install Composer dependencies
+        run: composer install
 
       - name: Setup Composer
         run: |
