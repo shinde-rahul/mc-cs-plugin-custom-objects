@@ -39,18 +39,32 @@ jobs:
           php-version: '7.4'
           extensions: mbstring, intl, pdo_mysql
 
-      - name: Clear Composer Cache and Update
-        run: | 
-          composer clear-cache
-          composer update
+      # - name: Clear Composer Cache and Update
+      #   run: | 
+      #     composer clear-cache
+      #     composer update
+
+      # - name: Install Composer dependencies
+      #   run: composer install --no-interaction --no-progress
+
+      # - name: Setup Composer
+      #   run: |
+      #     composer self-update
+      #     # composer config --global github-oauth.github.com ${{ secrets.GITHUB_COMPOSER_TOKEN }}
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --no-progress
-
-      - name: Setup Composer
-        run: |
-          composer self-update
-          # composer config --global github-oauth.github.com ${{ secrets.GITHUB_COMPOSER_TOKEN }}
+        run: composer install && composer require --dev theofidry/alice-data-fixtures
 
       - name: Build
         run: |
