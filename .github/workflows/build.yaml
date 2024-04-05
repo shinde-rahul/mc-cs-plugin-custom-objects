@@ -1,141 +1,280 @@
-name: Mautic Build and Test
+# name: Mautic Build and Test
+
+# on:
+#   push:
+#     branches:
+#       - development
+#       - beta
+#       - staging
+#       # Add other branches as needed
+#   pull_request:
+#     branches:
+#       - '*'
+
+# jobs:
+#   build_and_test:
+#     runs-on: ubuntu-latest
+    
+#     services:
+#       mysql:
+#         image: mysql:5.7
+#         env:
+#           MYSQL_ROOT_PASSWORD: root_password
+#           MYSQL_DATABASE: mautictest
+#           MYSQL_USER: travis
+#           MYSQL_PASSWORD: ''
+
+#     env:
+#       SUBMODULE_NAME: CustomObjectsBundle
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+#         with:
+#           ref: ${{ github.event.pull_request.head.sha }}
+
+#       - name: Setup PHP
+#         uses: shivammathur/setup-php@v2
+#         with:
+#           php-version: '8.0'
+#           extensions: mbstring, intl, pdo_mysql
+
+#       # - name: Clear Composer Cache and Update
+#       #   run: | 
+#       #     composer clear-cache
+#       #     composer update
+
+#       # - name: Install Composer dependencies
+#       #   run: composer install --no-interaction --no-progress
+
+#       # - name: Setup Composer
+#       #   run: |
+#       #     composer self-update
+#       #     # composer config --global github-oauth.github.com ${{ secrets.GITHUB_COMPOSER_TOKEN }}
+
+#       - name: Get composer cache directory
+#         id: composer-cache
+#         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+#       - name: Cache composer dependencies
+#         uses: actions/cache@v3
+#         with:
+#           path: ${{ steps.composer-cache.outputs.dir }}
+#           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+#           restore-keys: ${{ runner.os }}-composer-
+
+#       - name: Install Composer dependencies
+#         run: composer install && composer require --dev theofidry/alice-data-fixtures
+
+#       - name: Build
+#         run: |
+#           mkdir -p app/config
+#           echo "<?php
+#           \$hostedParameters = array_merge(
+#               \$hostedParameters,
+#               [
+#                   'private_cloud_plugin_deny_list'  => [],
+#                   'private_cloud_plugin_allow_list' => [],
+#               ]
+#           );" >> app/config/hosted_local.php
+
+#           echo "<?php
+#             \$parameters = array(
+#                 'db_driver' => 'pdo_mysql',
+#                 'db_host' => '127.0.0.1',
+#                 'db_port' => 3306,
+#                 'db_name' => 'mautictest',
+#                 'db_user' => 'travis',
+#                 'db_password' => '',
+#                 'db_table_prefix' => '',
+#                 'hosted_plan' => 'pro',
+#                 'custom_objects_enabled' => true,
+#                 'create_custom_field_in_background' => false,
+#             );" >> app/config/local.php
+#           composer validate --no-check-all --strict || (echo "Composer failed validation. If the lock file is out of sync you can try running 'composer update --lock'"; exit 1)
+#           composer install --ansi
+
+#       - name: PHPUnit and Sonar Scan
+#         run: |
+#           php --version
+#           mysql -h 127.0.0.1 -e 'CREATE DATABASE mautictest; CREATE USER travis@"%"; GRANT ALL on mautictest.* to travis@"%"; GRANT SUPER,PROCESS ON *.* TO travis@"%";'
+#           export SYMFONY_ENV="test"
+#           mkdir -p var/cache/coverage-report
+#           APP_DEBUG=0 php -dpcov.enabled=1 -dpcov.directory=. -dpcov.exclude="~tests|themes|vendor~" bin/phpunit -d memory_limit=3G --bootstrap vendor/autoload.php --configuration plugins/${SUBMODULE_NAME}/phpunit.xml --disallow-test-output --coverage-clover var/cache/coverage-report/clover.xml --testsuite=all
+
+#       - name: Static Analysis
+#         run: |
+#           export COMPOSER_ALLOW_SUPERUSER=1
+#           composer phpstan -- --no-progress
+
+#       - name: CS Fixer
+#         run: |
+#           export COMPOSER_ALLOW_SUPERUSER=1
+#           composer csfixer
+
+#       - name: Sonar Scan
+#         run: |
+#           # SonarQube scanning steps here
+
+#       - name: Quality Gate
+#         run: |
+#           # Quality gate checks here
+
+#       - name: Automerge
+#         if: |
+#           github.event_name == 'push' &&
+#           (github.ref == 'refs/heads/staging' ||
+#            github.ref == 'refs/heads/master' ||
+#            github.ref == 'refs/heads/preproduction' ||
+#            github.ref == 'refs/heads/hotfix' ||
+#            github.ref == '^refs/heads/epic-.*$')
+#         run: |
+#           # Automerge steps here
+
+#       - name: Set Revision
+#         if: |
+#           github.event_name == 'push' &&
+#           (github.ref == 'refs/heads/development' ||
+#            github.ref == 'refs/heads/beta' ||
+#            github.ref == 'refs/heads/staging')
+#         run: |
+#           # Set revision steps here
+
+
+name: Mautic Plugin tests
 
 on:
   push:
     branches:
-      - development
-      - beta
-      - staging
-      # Add other branches as needed
+      - staging # Main branch
+      - '[0-9]+\.[0-9]+'
   pull_request:
-    branches:
-      - '*'
+
+env:
+  PLUGIN_DIR: plugins/CustomObjectsBundle # Same as extra.install-directory-name in composer.json
 
 jobs:
-  build_and_test:
+  phpunit:
     runs-on: ubuntu-latest
-    
-    services:
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: root_password
-          MYSQL_DATABASE: mautictest
-          MYSQL_USER: travis
-          MYSQL_PASSWORD: ''
 
-    env:
-      SUBMODULE_NAME: CustomObjectsBundle
+    strategy:
+      matrix:
+        php-versions: ['7.4'] # The supported PHP versions
+        db-types: ['mysql'] # can be: ['mysql', 'mariadb'] but not necessary for this plugin that does not add any DB schema
+        mautic-versions: ['4.4'] # The supported Mautic versions
+
+    name: Tests on PHP ${{ matrix.php-versions }}, ${{ matrix.db-types }}, Mautic ${{ matrix.mautic-versions }}
+
+    services:
+      database:
+        image: ${{ matrix.db-types == 'mysql' && 'mysql:5.7' || 'mariadb:10.3' }}
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: mautictest
+        ports:
+          - 3306
+        options: >-
+          --shm-size=2gb
+          --name=${{ matrix.db-types }}
+          --tmpfs=/var/lib/mysql
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
+    - name: Checkout Mautic 4
+      uses: actions/checkout@v3
+      with:
+        repository: mautic/mautic
+        ref: ${{ matrix.mautic-versions }}
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.0'
-          extensions: mbstring, intl, pdo_mysql
+    - name: Checkout this plugin
+      uses: actions/checkout@v3
+      with:
+        path: ${{ env.PLUGIN_DIR }}
 
-      # - name: Clear Composer Cache and Update
-      #   run: | 
-      #     composer clear-cache
-      #     composer update
+    - name: Setup PHP, with composer and extensions
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-versions }}
+        ini-values: -dpcov.enabled=0, pcov.directory=."
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql, pdo_mysql
+        coverage: pcov
 
-      # - name: Install Composer dependencies
-      #   run: composer install --no-interaction --no-progress
+    - name: add MySQL config file
+      run: |
+        mysqldump --version
+        mysqldump --print-defaults
+        cp .github/ci-files/.my.cnf ~/.my.cnf
+        mysqldump --print-defaults
 
-      # - name: Setup Composer
-      #   run: |
-      #     composer self-update
-      #     # composer config --global github-oauth.github.com ${{ secrets.GITHUB_COMPOSER_TOKEN }}
+    - name: Set SYMFONY_ENV to test
+      run: |
+        echo "SYMFONY_ENV=test" >> $GITHUB_ENV
+        echo "MAUTIC_ENV=test" >> $GITHUB_ENV
 
-      - name: Get composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
-      - name: Cache composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+    - name: Cache composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
 
-      - name: Install Composer dependencies
-        run: composer install && composer require --dev theofidry/alice-data-fixtures
+    - name: Install Composer dependencies
+      run: composer install && composer require --dev theofidry/alice-data-fixtures
 
-      - name: Build
-        run: |
-          mkdir -p app/config
-          echo "<?php
-          \$hostedParameters = array_merge(
-              \$hostedParameters,
-              [
-                  'private_cloud_plugin_deny_list'  => [],
-                  'private_cloud_plugin_allow_list' => [],
-              ]
-          );" >> app/config/hosted_local.php
+    - name: Install Mautic
+      env:
+        DB_PORT: ${{ job.services.database.ports[3306] }}
+      run: |
+        cp ./.github/ci-files/local.php ./app/config/local.php
+        php bin/console mautic:install --force http://localhost
 
-          echo "<?php
-            \$parameters = array(
-                'db_driver' => 'pdo_mysql',
-                'db_host' => '127.0.0.1',
-                'db_port' => 3306,
-                'db_name' => 'mautictest',
-                'db_user' => 'travis',
-                'db_password' => '',
-                'db_table_prefix' => '',
-                'hosted_plan' => 'pro',
-                'custom_objects_enabled' => true,
-                'create_custom_field_in_background' => false,
-            );" >> app/config/local.php
-          composer validate --no-check-all --strict || (echo "Composer failed validation. If the lock file is out of sync you can try running 'composer update --lock'"; exit 1)
-          composer install --ansi
+    - name: Install Plugins
+      env:
+        DB_PORT: ${{ job.services.database.ports[3306] }}
+      run: php bin/console mautic:plugins:install --env=dev
 
-      - name: PHPUnit and Sonar Scan
-        run: |
-          php --version
-          mysql -h 127.0.0.1 -e 'CREATE DATABASE mautictest; CREATE USER travis@"%"; GRANT ALL on mautictest.* to travis@"%"; GRANT SUPER,PROCESS ON *.* TO travis@"%";'
-          export SYMFONY_ENV="test"
-          mkdir -p var/cache/coverage-report
-          APP_DEBUG=0 php -dpcov.enabled=1 -dpcov.directory=. -dpcov.exclude="~tests|themes|vendor~" bin/phpunit -d memory_limit=3G --bootstrap vendor/autoload.php --configuration plugins/${SUBMODULE_NAME}/phpunit.xml --disallow-test-output --coverage-clover var/cache/coverage-report/clover.xml --testsuite=all
+    - name: Run Code Style check
+      run: bin/php-cs-fixer fix ${{ env.PLUGIN_DIR }} --config=.php-cs-fixer.php -v --dry-run --show-progress=dots --diff
 
-      - name: Static Analysis
-        run: |
-          export COMPOSER_ALLOW_SUPERUSER=1
-          composer phpstan -- --no-progress
+    - name: PHPSTAN - baseline (debug)
+      run: bin/phpstan --configuration=plugins/CustomObjectsBundle/phpstan.neon --generate-baseline=var/logs/phpstan-baseline-${{ matrix.php-versions }}.neon --allow-empty-baseline 
 
-      - name: CS Fixer
-        run: |
-          export COMPOSER_ALLOW_SUPERUSER=1
-          composer csfixer
+    - name: PHPSTAN
+      run: bin/phpstan --configuration=${{ env.PLUGIN_DIR }}/phpstan.neon
 
-      - name: Sonar Scan
-        run: |
-          # SonarQube scanning steps here
+    - name: Rector
+      run: composer rector -- --dry-run --no-progress-bar ${{ env.PLUGIN_DIR }}
 
-      - name: Quality Gate
-        run: |
-          # Quality gate checks here
+    - name: Twig Lint
+      run: bin/console lint:twig ${{ env.PLUGIN_DIR }}
 
-      - name: Automerge
-        if: |
-          github.event_name == 'push' &&
-          (github.ref == 'refs/heads/staging' ||
-           github.ref == 'refs/heads/master' ||
-           github.ref == 'refs/heads/preproduction' ||
-           github.ref == 'refs/heads/hotfix' ||
-           github.ref == '^refs/heads/epic-.*$')
-        run: |
-          # Automerge steps here
+    - name: Run PHPUNIT tests
+      env:
+        DB_PORT: ${{ job.services.database.ports[3306] }}
+      # run: XDEBUG_MODE=coverage APP_DEBUG=0 php -dpcov.enabled=1 -dpcov.directory=. -dpcov.exclude="~tests|themes|vendor~" bin/phpunit -d memory_limit=1G --bootstrap vendor/autoload.php --configuration ${{ env.PLUGIN_DIR }}/phpunit.xml --coverage-clover=${{ env.PLUGIN_DIR }}/coverage.xml --coverage-text
+      run: XDEBUG_MODE=coverage APP_DEBUG=0 php -dpcov.enabled=1 -dpcov.directory=. -dpcov.exclude="~tests|themes|vendor|app~" bin/phpunit -d memory_limit=1G --bootstrap vendor/autoload.php --configuration app/phpunit.xml.dist --filter=CustomObjectsBundle --coverage-clover=${{ env.PLUGIN_DIR }}/coverage.xml --coverage-text
 
-      - name: Set Revision
-        if: |
-          github.event_name == 'push' &&
-          (github.ref == 'refs/heads/development' ||
-           github.ref == 'refs/heads/beta' ||
-           github.ref == 'refs/heads/staging')
-        run: |
-          # Set revision steps here
+    - name: Coverage report (debug)
+      run: cat ${{ env.PLUGIN_DIR }}/coverage.xml
+
+    #  - name: Upload coverage report
+    #     if: ${{ matrix.php-versions == '8.0' && matrix.db-types == 'mysql' && matrix.mautic-versions == '4.4' }} # upload just once, change for your matrix
+    #     uses: codecov/codecov-action@v3
+    #     with:
+    #     token: ${{ secrets.CODECOV_TOKEN }}
+    #     fail_ci_if_error: true
+    #     working-directory: ${{ env.PLUGIN_DIR }}
+    #     verbose: true
+
+    - name: Upload logs as artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: mautic-logs
+        path: var/logs/
