@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types =1);
+declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Segment\Query\Functional;
 
@@ -8,29 +8,30 @@ use Doctrine\ORM\Exception\ORMException;
 use Doctrine\ORM\OptimisticLockException;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\LeadBundle\Command\UpdateLeadListsCommand;
-use Mautic\LeadBundle\DataFixtures\ORM\LoadCategoryData;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadList;
 use Mautic\LeadBundle\Entity\ListLead;
-use Mautic\LeadBundle\Model\ListModel;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
-use MauticPlugin\CustomObjectsBundle\CustomFieldType\CustomFieldTypeInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\TextType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
-use MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomObjectTestCase;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Translation\TranslatorInterface;
-use function PHPUnit\Framework\assertCount;
 
 class QueryFunctionalTest extends MauticMysqlTestCase
 {
+    private CustomField $customField;
 
-    private CustomObject $customObject;
+    private Lead $leadABC;
+
+    private Lead $leadXYZ;
+
+    private Lead $leadEmpty;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,42 +41,48 @@ class QueryFunctionalTest extends MauticMysqlTestCase
         $customItemModel       = self::$container->get('mautic.custom.model.item');
         $this->assertInstanceOf(CustomItemModel::class, $customItemModel);
 
-        [$this->customObject, $this->customField] = $this->createBookObjectWithPublisherCustomField();
+        [$customObject, $this->customField] = $this->createBookObjectWithPublisherCustomField();
 
         $values =  ['bookWithPublisherABC' => 'ABC', 'bookWithPublisherXYZ' => 'XYZ', 'bookWithPublisherEmpty' => ''];
 
         foreach ($values as $name => $publisher) {
-            ${$name} = $this->createCustomItem($this->customObject, ['publisher' => $publisher], 'publisher'.$publisher);
-            $this->em->persist(${$name});
-            $this->em->flush();
+            ${$name} = $this->createCustomItem($customObject, $publisher, 'publisher'.$publisher);
         }
 
-        $leadABC = new Lead();
-        $leadABC->setFirstname('LeadABC')->setEmail('leadABC@acquia.com')->setIsPublished(true);
-        $this->em->persist($leadABC);
+        $this->leadABC = new Lead();
+        $this->leadABC->setFirstname('LeadABC')->setEmail('leadABC@acquia.com')->setIsPublished(true);
+        $this->em->persist($this->leadABC);
 
-        $leadXYZ = new Lead();
-        $leadXYZ->setFirstname('LeadXYZ')->setEmail('leadXYZ@acquia.com')->setIsPublished(true);
-        $this->em->persist($leadXYZ);
+        $this->leadXYZ = new Lead();
+        $this->leadXYZ->setFirstname('LeadXYZ')->setEmail('leadXYZ@acquia.com')->setIsPublished(true);
+        $this->em->persist($this->leadXYZ);
 
-        $leadEmpty = new Lead();
-        $leadEmpty->setFirstname('LeadEmpty')->setEmail('leadEmpty@acquia.com')->setIsPublished(true);
-        $this->em->persist($leadEmpty);
+        $this->leadEmpty = new Lead();
+        $this->leadEmpty->setFirstname('LeadEmpty')->setEmail('leadEmpty@acquia.com')->setIsPublished(true);
+        $this->em->persist($this->leadEmpty);
 
         $this->em->flush();
 
-        $xrefABC = $customItemModel->linkEntity($bookWithPublisherABC, 'contact', (int) $leadABC->getId());
+        /** @phpstan-ignore-next-line */
+        $xrefABC = $customItemModel->linkEntity($bookWithPublisherABC, 'contact', (int) $this->leadABC->getId());
         $this->assertInstanceOf(CustomItemXrefContact::class, $xrefABC);
 
-        $xrefXYZ = $customItemModel->linkEntity($bookWithPublisherXYZ, 'contact',(int) $leadXYZ->getId());
+        /** @phpstan-ignore-next-line */
+        $xrefXYZ = $customItemModel->linkEntity($bookWithPublisherXYZ, 'contact', (int) $this->leadXYZ->getId());
         $this->assertInstanceOf(CustomItemXrefContact::class, $xrefXYZ);
 
-        $xrefEmpty = $customItemModel->linkEntity($bookWithPublisherEmpty, 'contact',(int) $leadEmpty->getId());
+        /** @phpstan-ignore-next-line */
+        $xrefEmpty = $customItemModel->linkEntity($bookWithPublisherEmpty, 'contact', (int) $this->leadEmpty->getId());
         $this->assertInstanceOf(CustomItemXrefContact::class, $xrefEmpty);
 
+        $this->assertCount(3, $this->em->getRepository(CustomItem::class)->findAll());
+        $this->assertCount(3, $this->em->getRepository(Lead::class)->findAll());
+        $this->assertCount(1, $this->em->getRepository(CustomField::class)->findAll());
+        $this->assertCount(1, $this->em->getRepository(CustomObject::class)->findAll());
+        $this->assertCount(3, $this->em->getRepository(CustomItemXrefContact::class)->findAll());
     }
 
-    public function testNotEqualsOperatorSegmentOnCustomField()
+    public function testNotEqualsOperatorSegmentOnCustomField(): void
     {
         $filters = [[
             'glue'       => 'and',
@@ -84,59 +91,72 @@ class QueryFunctionalTest extends MauticMysqlTestCase
             'type'       => 'text',
             'operator'   => '!=',
             'properties' => [
-                'filter' => 'ABC'
+                'filter' => 'ABC',
             ],
         ]];
 
-        $segment = new LeadList();
-        $segment->setName('Segment A');
-        $segment->setAlias('segment-a');
-        $segment->setFilters($filters);
-        $segment->setIsPublished(true);
-        $this->em->persist($segment);
-        $this->em->flush($segment);
+        $segmentId = $this->createAndUpdateSegment($filters);
 
-        $segments = $this->em->getRepository(LeadList::class)->findAll();
-        assertCount(1, $segments);
-        $segmentId = $segments[0]->getId() ;
-
-        //dd($segmentId);
-
-        $this->assertCount(3, $this->em->getRepository(CustomItem::class)->findAll());
-        $this->assertCount(3, $this->em->getRepository(Lead::class)->findAll());
-        $this->assertCount(1, $this->em->getRepository(CustomField::class)->findAll());
-        $this->assertCount(1, $this->em->getRepository(CustomObject::class)->findAll());
-        $this->assertCount(3, $this->em->getRepository(CustomItemXrefContact::class)->findAll());
-
-        $commandTester = $this->testSymfonyCommand(UpdateLeadListsCommand::NAME, ['-i' => $segmentId]);
-
-        //dd($commandTester);
-
-        $this->assertSame(0, $commandTester->getStatusCode(), 'Update lead lists command was not successful');
-
-        //dd($segment->getLeads());
-
-        $members = $this->em->getRepository(ListLead::class)->findAll();
-
-//        dd($members);
-
+        $members = $this->em->getRepository(ListLead::class)->findBy(['list' => $segmentId]);
         $this->assertCount(2, $members);
 
+        $actualMembers = array_map(fn (ListLead $segment) => $segment->getLead()->getId(), $members);
+        sort($actualMembers);
+        $expectedMembers = [$this->leadXYZ->getId(), $this->leadEmpty->getId()];
+        sort($expectedMembers);
 
+        $this->assertNotContains($this->leadABC->getId(), $actualMembers);
+
+        $this->assertSame($actualMembers, $expectedMembers);
     }
 
-    private function createCustomItem(CustomObject $customObject, array $data, string $name): CustomItem
+    public function testEmptyOperatorSegmentOnCustomField(): void
     {
-        $customItem = new CustomItem($customObject);
-        $customItem->setCustomFieldValues($data);
+        $filters = [[
+            'glue'       => 'and',
+            'field'      => 'cmf_'.$this->customField->getId(),
+            'object'     => 'custom_object',
+            'type'       => 'text',
+            'operator'   => 'empty',
+            'properties' => [
+                'filter'  => null,
+                'display' => null,
+            ],
+        ]];
+
+        $segmentId = $this->createAndUpdateSegment($filters);
+
+        $members = $this->em->getRepository(ListLead::class)->findBy(['list' => $segmentId]);
+        $this->assertCount(1, $members);
+
+        $actualMembers = array_map(fn (ListLead $segment) => $segment->getLead()->getId(), $members);
+        sort($actualMembers);
+        $expectedMembers = [$this->leadEmpty->getId()];
+        sort($expectedMembers);
+
+        $this->assertNotContains($this->leadABC->getId(), $actualMembers);
+        $this->assertNotContains($this->leadXYZ->getId(), $actualMembers);
+
+        $this->assertSame($actualMembers, $expectedMembers);
+    }
+
+    private function createCustomItem(CustomObject $customObject, string $publisher, string $name): CustomItem
+    {
+        $customItem       = new CustomItem($customObject);
+        $customFieldValue = new CustomFieldValueText($this->customField, $customItem, $publisher);
+        $customItem->addCustomFieldValue($customFieldValue);
         $customItem->setName($name);
         $customItem->setIsPublished(true);
+        $this->em->persist($customItem);
+        $this->em->persist($customFieldValue);
+        $this->em->flush();
 
         return $customItem;
     }
 
     /**
      * @return array<mixed>
+     *
      * @throws ORMException
      * @throws OptimisticLockException
      */
@@ -165,6 +185,33 @@ class QueryFunctionalTest extends MauticMysqlTestCase
         $customField->setIsPublished(true);
         $this->em->persist($customField);
         $this->em->flush();
+
         return [$customObject, $customField];
+    }
+
+    /**
+     * @param array<mixed> $filters
+     *
+     * @throws ORMException
+     * @throws OptimisticLockException
+     */
+    private function createAndUpdateSegment(array $filters): int
+    {
+        $segment = new LeadList();
+        $segment->setName('Segment A');
+        $segment->setAlias('segment-a');
+        $segment->setFilters($filters);
+        $segment->setIsPublished(true);
+        $this->em->persist($segment);
+        $this->em->flush($segment);
+
+        $this->assertCount(1, $this->em->getRepository(LeadList::class)->findAll());
+
+        $segmentId = $segment->getId();
+
+        $commandTester = $this->testSymfonyCommand(UpdateLeadListsCommand::NAME, ['-i' => $segmentId]);
+        $this->assertSame(0, $commandTester->getStatusCode(), 'Update lead lists command was not successful');
+
+        return $segmentId;
     }
 }
