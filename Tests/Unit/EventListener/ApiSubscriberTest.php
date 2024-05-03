@@ -25,6 +25,14 @@ use Symfony\Component\Translation\TranslatorInterface;
 
 class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 {
+    private const CONTROLLER_METHODS = [
+        'newEntityAction',
+        'newEntitiesAction',
+        'editEntityAction',
+        'editEntitiesAction',
+    ];
+    private const CONTROLLER_CLASS = 'Mautic\LeadBundle\Controller\Api\LeadApiController';
+
     private $configProvider;
 
     private $customObjectModel;
@@ -48,7 +56,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->customObjectModel = $this->createMock(CustomObjectModel::class);
         $this->customItemModel   = $this->createMock(CustomItemModel::class);
         $this->apiEntityEvent    = $this->createMock(ApiEntityEvent::class);
-        $this->request           = $this->createMock(Request::class);
+        $this->request           = new Request();
         $this->apiSubscriber     = new ApiSubscriber(
             $this->configProvider,
             $this->customObjectModel,
@@ -74,7 +82,23 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
     }
 
-    public function testGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint(): void
+    /**
+     * @return iterable<string[]>
+     */
+    public function dataGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint(): iterable
+    {
+        foreach (self::CONTROLLER_METHODS as $method) {
+            yield ['Mautic\UnknownBundle\Controller\Api\UnknownController::'.$method];
+        }
+
+        yield [self::CONTROLLER_CLASS.'::unknownAction'];
+        yield [self::CONTROLLER_CLASS.'::unknownMethod'];
+    }
+
+    /**
+     * @dataProvider dataGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint
+     */
+    public function testGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint(string $controller): void
     {
         $this->configProvider->expects($this->once())
             ->method('pluginIsEnabled')
@@ -82,9 +106,19 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
-            ->willReturn([]);
+            ->willReturn([
+                'email'         => 'john@doe.email',
+                'customObjects' => [
+                    'data' => [
+                        [
+                            'alias' => 'object-1-alias',
+                            'data'  => [[]],
+                        ],
+                    ],
+                ],
+            ]);
 
-        $this->request->method('getPathInfo')->willReturn('/api/unicorn');
+        $this->setControllerToRequest($controller);
 
         $this->apiEntityEvent->expects($this->never())
             ->method('getEntity');
@@ -98,7 +132,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->request->method('getPathInfo')->willReturn('/api/contacts/new');
+        $this->setControllerToRequest();
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
@@ -110,13 +144,26 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
     }
 
-    public function testValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias(): void
+    /**
+     * @return iterable<string[]>
+     */
+    public function dataValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias(): iterable
+    {
+        foreach (self::CONTROLLER_METHODS as $method) {
+            yield [self::CONTROLLER_CLASS.'::'.$method];
+        }
+    }
+
+    /**
+     * @dataProvider dataValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias
+     */
+    public function testValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias(string $controller): void
     {
         $this->configProvider->expects($this->once())
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->request->method('getPathInfo')->willReturn('/api/contacts/new');
+        $this->setControllerToRequest($controller);
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
@@ -152,7 +199,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->request->method('getPathInfo')->willReturn('/api/contacts/new');
+        $this->setControllerToRequest();
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
@@ -188,7 +235,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->request->method('getPathInfo')->willReturn('/api/contacts/new');
+        $this->setControllerToRequest();
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
@@ -218,7 +265,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->request->method('getPathInfo')->willReturn('/api/contacts/new');
+        $this->setControllerToRequest();
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
@@ -261,7 +308,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->request->method('getPathInfo')->willReturn('/api/contacts/new');
+        $this->setControllerToRequest();
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
@@ -342,7 +389,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->request->method('getPathInfo')->willReturn('/api/contacts/new');
+        $this->setControllerToRequest();
 
         $this->apiEntityEvent->expects($this->once())
             ->method('getEntityRequestParameters')
@@ -417,5 +464,10 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             }), false);
 
         $this->apiSubscriber->saveCustomObjectsInContactRequest($this->apiEntityEvent);
+    }
+
+    private function setControllerToRequest(string $controller = self::CONTROLLER_CLASS.'::'.self::CONTROLLER_METHODS[0]): void
+    {
+        $this->request->attributes->set('_controller', $controller);
     }
 }
