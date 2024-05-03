@@ -7,6 +7,7 @@ namespace MauticPlugin\CustomObjectsBundle\EventListener;
 use InvalidArgumentException;
 use Mautic\ApiBundle\ApiEvents;
 use Mautic\ApiBundle\Event\ApiEntityEvent;
+use Mautic\LeadBundle\Controller\Api\LeadApiController;
 use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
@@ -119,7 +120,7 @@ class ApiSubscriber implements EventSubscriberInterface
             throw new InvalidArgumentException('Custom Object Plugin is disabled');
         }
 
-        if (1 !== preg_match('/^\/api\/contacts\/.*(new|edit)/', $request->getPathInfo())) {
+        if (1 !== preg_match('~^'.preg_quote(LeadApiController::class, '~').'::(new|edit)(Entity|Entities)Action$~i', $request->attributes->get('_controller'))) {
             throw new InvalidArgumentException('Not a API request we care about');
         }
 
