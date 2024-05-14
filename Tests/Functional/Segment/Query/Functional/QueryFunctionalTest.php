@@ -43,11 +43,9 @@ class QueryFunctionalTest extends MauticMysqlTestCase
 
         [$customObject, $this->customField] = $this->createBookObjectWithPublisherCustomField();
 
-        $values =  ['bookWithPublisherABC' => 'ABC', 'bookWithPublisherXYZ' => 'XYZ', 'bookWithPublisherEmpty' => ''];
-
-        foreach ($values as $name => $publisher) {
-            ${$name} = $this->createCustomItem($customObject, $publisher, 'publisher'.$publisher);
-        }
+        $bookWithPublisherABC   = $this->createCustomItem($customObject, 'ABC', 'publisherABC');
+        $bookWithPublisherXYZ   = $this->createCustomItem($customObject, 'XYZ', 'publisherXYZ');
+        $bookWithPublisherEmpty = $this->createCustomItem($customObject, '', 'publisherEmpty');
 
         $this->leadABC = new Lead();
         $this->leadABC->setFirstname('LeadABC')->setEmail('leadABC@acquia.com')->setIsPublished(true);
@@ -63,15 +61,12 @@ class QueryFunctionalTest extends MauticMysqlTestCase
 
         $this->em->flush();
 
-        /** @phpstan-ignore-next-line */
         $xrefABC = $customItemModel->linkEntity($bookWithPublisherABC, 'contact', (int) $this->leadABC->getId());
         $this->assertInstanceOf(CustomItemXrefContact::class, $xrefABC);
 
-        /** @phpstan-ignore-next-line */
         $xrefXYZ = $customItemModel->linkEntity($bookWithPublisherXYZ, 'contact', (int) $this->leadXYZ->getId());
         $this->assertInstanceOf(CustomItemXrefContact::class, $xrefXYZ);
 
-        /** @phpstan-ignore-next-line */
         $xrefEmpty = $customItemModel->linkEntity($bookWithPublisherEmpty, 'contact', (int) $this->leadEmpty->getId());
         $this->assertInstanceOf(CustomItemXrefContact::class, $xrefEmpty);
 
