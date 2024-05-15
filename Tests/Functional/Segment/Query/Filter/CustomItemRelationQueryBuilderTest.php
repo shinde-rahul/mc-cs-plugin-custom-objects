@@ -13,24 +13,13 @@ use Mautic\LeadBundle\Entity\LeadRepository;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\FixtureObjectsTrait;
 
-class CustomItemRelationQueryBuilderTestCase extends MauticMysqlTestCase
+class CustomItemRelationQueryBuilderTest extends MauticMysqlTestCase
 {
     use FixtureObjectsTrait;
 
-    /**
-     * @var CoreParametersHelper
-     */
-    private $coreParametersHelper;
-
-    /**
-     * @var LeadListRepository
-     */
-    private $segmentRepository;
-
-    /**
-     * @var LeadRepository
-     */
-    private $contactRepository;
+    private CoreParametersHelper $coreParametersHelper;
+    private LeadListRepository $segmentRepository;
+    private LeadRepository $contactRepository;
 
     protected function setUp(): void
     {
@@ -176,8 +165,9 @@ class CustomItemRelationQueryBuilderTestCase extends MauticMysqlTestCase
             throw new InvalidArgumentException("No segment with alias '{$segmentAlias}' found");
         }
 
-        $count = $this->segmentRepository->getLeadCount([$segment->getId()]);
-        $count = (int) $count[$segment->getId()];
+        $count = $this->segmentRepository->getLeadCount($segment->getId());
+        $this->assertIsNumeric($count);
+        $count = (int) $count;
 
         $this->assertSame(
             $expectedLeadCount,
@@ -188,7 +178,7 @@ class CustomItemRelationQueryBuilderTestCase extends MauticMysqlTestCase
 
     private function assertContactIsInSegment(string $contactEmail, string $segmentAlias): void
     {
-        $contact = $this->contactRepository->findOneByEmail($contactEmail);
+        $contact = $this->contactRepository->findOneBy(['email' => $contactEmail]);
         /** @var LeadList[] $segments */
         $segments = $this->segmentRepository->getLeadLists($contact->getId());
 
