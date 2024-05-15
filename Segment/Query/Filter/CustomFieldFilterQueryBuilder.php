@@ -45,10 +45,7 @@ class CustomFieldFilterQueryBuilder extends BaseFilterQueryBuilder
 
         $tableAlias = 'cfwq_'.(int) $filter->getField();
 
-        $unionQueryContainer = $this->filterHelper->createValueQuery(
-            $tableAlias,
-            $filter
-        );
+        $unionQueryContainer = $this->filterHelper->createValueQuery($tableAlias, $filter, true);
 
         foreach ($unionQueryContainer as $segmentQueryBuilder) {
             $segmentQueryBuilder->andWhere(
