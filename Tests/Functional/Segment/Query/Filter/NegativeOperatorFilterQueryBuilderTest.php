@@ -197,3 +197,4 @@ class NegativeOperatorFilterQueryBuilderTest extends MauticMysqlTestCase
         return array_map(fn (ListLead $segment) => $segment->getLead()->getFirstname(), $members);
     }
 }
+
