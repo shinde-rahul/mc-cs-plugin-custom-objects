@@ -90,7 +90,8 @@ class QueryFilterHelper
                 $segmentQueryBuilder,
                 $tableAlias,
                 $filter->getOperator(),
-                $valueParameter
+                $valueParameter,
+                $filter->getParameterValue()
             );
 
             $this->addOperatorExpression(
@@ -154,14 +155,15 @@ class QueryFilterHelper
     /**
      * Form the logical expression needed to limit the CustomValue's value for given operator.
      *
-     * @return CompositeExpression|string
+     * @param array<string> $parameterValueArray
      */
     private function getCustomValueValueExpression(
         SegmentQueryBuilder $customQuery,
         string $tableAlias,
         string $operator,
-        string $valueParameter
-    ) {
+        string $valueParameter,
+        array $parameterValueArray = [],
+    ): CompositeExpression|string {
         switch ($operator) {
             case 'empty':
                 $expression = $customQuery->expr()->orX(
@@ -205,6 +207,14 @@ class QueryFilterHelper
                 );
 
                 break;
+            case 'between':
+            case 'notBetween':
+                    $expression = $customQuery->expr()->{$operator}(
+                        $tableAlias.'_value.value',
+                        array_values($parameterValueArray)
+                    );
+                    break;
+
             default:
                 $expression     = $customQuery->expr()->{$operator}(
                     $tableAlias.'_value.value',

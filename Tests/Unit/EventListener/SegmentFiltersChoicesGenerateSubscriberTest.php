@@ -214,8 +214,8 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             'less than or equal'    => 'lte',
             'empty'                 => 'empty',
             'not empty'             => '!empty',
-            'between' => 'between',
-            'not between' => '!between',
+            'between'               => 'between',
+            'not between'           => '!between',
         ];
 
         $event = new LeadListFiltersChoicesEvent([], [], $this->translator);
@@ -274,8 +274,6 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                 'not empty',
                 'like',
                 'not like',
-                'between',
-                'not between',
                 'regexp',
                 'not regexp',
                 'starts with',
@@ -291,6 +289,8 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                 'not empty',
                 'like',
                 'not like',
+                'between',
+                'not between',
                 'regexp',
                 'not regexp',
                 'starts with',
