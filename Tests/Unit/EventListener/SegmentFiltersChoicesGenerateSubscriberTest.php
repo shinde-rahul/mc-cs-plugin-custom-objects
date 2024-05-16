@@ -7,8 +7,14 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\EventListener;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
 use Mautic\LeadBundle\Event\LeadListFiltersChoicesEvent;
+use Mautic\LeadBundle\Event\OverrideOperatorLabelEvent;
+use Mautic\LeadBundle\Event\TypeOperatorsEvent;
 use Mautic\LeadBundle\LeadEvents;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
+use Mautic\LeadBundle\Provider\TypeOperatorProvider;
+use Mautic\LeadBundle\Provider\TypeOperatorProviderInterface;
+use Mautic\LeadBundle\Segment\OperatorOptions;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\DateType;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
@@ -18,6 +24,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
@@ -52,6 +59,10 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
      */
     private $filterOperatorProvider;
 
+    private MockObject|TypeOperatorProviderInterface $typeOperatorProvider;
+
+    private MockObject|EventDispatcherInterface $dispatcher;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -61,12 +72,18 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
         $this->configProvider         = $this->createMock(ConfigProvider::class);
         $this->fieldTypeProvider      = $this->createMock(CustomFieldTypeProvider::class);
         $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
+        $this->dispatcher             = $this->createMock(EventDispatcherInterface::class);
+        $this->typeOperatorProvider   = new TypeOperatorProvider(
+            $this->dispatcher,
+            $this->filterOperatorProvider
+        );
 
         $this->subscriber = new SegmentFiltersChoicesGenerateSubscriber(
             $this->customObjectRepository,
             $this->translator,
             $this->configProvider,
-            $this->fieldTypeProvider
+            $this->fieldTypeProvider,
+            $this->typeOperatorProvider
         );
     }
 
@@ -294,7 +311,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                 'contains'
             );
 
-        $this->filterOperatorProvider->expects($this->once())
+        $this->filterOperatorProvider->expects($this->any())
             ->method('getAllOperators')
             ->willReturn($allOperators);
 
@@ -308,6 +325,160 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
         $this->assertSame('Products Mobile', $choices['custom_object']['cmo_1']['label']);
         $this->assertSame('Products : Price', $choices['custom_object']['cmf_1']['label']);
         $this->assertSame($fieldOperators, $choices['custom_object']['cmf_1']['operators']);
+    }
+
+    public function testOnGenerateSegmentFiltersForDate(): void
+    {
+        $customObject = new CustomObject();
+        $customObject->setId(1);
+        $customObject->setNameSingular('Product');
+        $customObject->setNamePlural('Products');
+        $customObject->setIsPublished(true);
+
+        $dateType        = new DateType($this->translator, $this->filterOperatorProvider);
+        $dateCustomField = new CustomField();
+        $dateCustomField->setId(2);
+        $dateCustomField->setType('date');
+        $dateCustomField->setTypeObject($dateType);
+        $dateCustomField->setLabel('Purchase Date');
+        $dateCustomField->setAlias('purchase_date');
+
+        $customObject->addCustomField($dateCustomField);
+
+        $criteria = new Criteria(Criteria::expr()->eq('isPublished', 1));
+
+        $keyTypeMapping = [
+            'custom.field.type.text'   => 'text',
+            'custom.field.type.date'   => 'date',
+            'custom.field.type.hidden' => 'hidden',
+        ];
+
+        $event = new LeadListFiltersChoicesEvent([], [], $this->translator);
+
+        $this->configProvider->expects($this->once())
+            ->method('pluginIsEnabled')
+            ->willReturn(true);
+
+        $this->fieldTypeProvider->expects($this->once())
+            ->method('getKeyTypeMapping')
+            ->willReturn($keyTypeMapping);
+
+        $this->customObjectRepository->expects($this->once())
+            ->method('matching')
+            ->with($criteria)
+            ->willReturn(new ArrayCollection([$customObject]));
+
+        $this->translator
+            ->method('trans')
+            ->withConsecutive(
+                ['custom.item.name.label'],
+            )
+            ->willReturn(
+                'Mobile'
+            );
+
+        $this->filterOperatorProvider->expects($this->once())
+            ->method('getAllOperators')
+            ->willReturn([
+                OperatorOptions::GREATER_THAN => [
+                    'label'       => 'grater than',
+                    'expr'        => 'gt',
+                    'negate_expr' => 'lt',
+                ],
+                OperatorOptions::GREATER_THAN_OR_EQUAL => [
+                    'label'       => 'grater than or equal',
+                    'expr'        => 'gte',
+                    'negate_expr' => 'lt',
+                ],
+                OperatorOptions::LESS_THAN => [
+                    'label'        => 'less than',
+                    'expr'         => 'lt',
+                    'negagte_expr' => 'gt',
+                ],
+                OperatorOptions::LESS_THAN_OR_EQUAL => [
+                    'label'       => 'less than or equal',
+                    'expr'        => 'lte',
+                    'negate_expr' => 'gt',
+                ],
+            ]);
+
+        $this->dispatcher->expects($this->exactly(3))
+            ->method('dispatch')
+            ->withConsecutive(
+                [
+                    LeadEvents::COLLECT_OPERATORS_FOR_FIELD_TYPE,
+                    $this->callback(function (TypeOperatorsEvent $event) {
+                        // Emulate a subscriber.
+                        $event->setOperatorsForFieldType('date', [
+                            'include' => [
+                                OperatorOptions::GREATER_THAN,
+                                OperatorOptions::GREATER_THAN_OR_EQUAL,
+                                OperatorOptions::LESS_THAN,
+                                OperatorOptions::LESS_THAN_OR_EQUAL,
+                            ],
+                        ]);
+
+                        $event->setOperatorsForFieldType('text', [
+                            'include' => [
+                                OperatorOptions::GREATER_THAN,
+                                OperatorOptions::GREATER_THAN_OR_EQUAL,
+                                OperatorOptions::LESS_THAN,
+                                OperatorOptions::LESS_THAN_OR_EQUAL,
+                            ],
+                        ]);
+
+                        return true;
+                    }),
+                ],
+                [
+                    LeadEvents::OVERRIDE_OPERATOR_LABEL_FOR_FIELD_TYPE,
+                    $this->callback(function (OverrideOperatorLabelEvent $event) {
+                        // Emulate a subscriber.
+                        $event->setTypeOperatorsChoices(
+                            [
+                                'Greater Than' => OperatorOptions::GREATER_THAN,
+                            ]
+                        );
+
+                        return true;
+                    }),
+                ],
+                [
+                    LeadEvents::OVERRIDE_OPERATOR_LABEL_FOR_FIELD_TYPE,
+                    $this->callback(function (OverrideOperatorLabelEvent $event) {
+                        // Emulate a subscriber.
+                        $event->setTypeOperatorsChoices(
+                            [
+                                'After'                  => OperatorOptions::GREATER_THAN,
+                                'After (Including day)'  => OperatorOptions::GREATER_THAN_OR_EQUAL,
+                                'Before'                 => OperatorOptions::LESS_THAN,
+                                'Before (Including day)' => OperatorOptions::LESS_THAN_OR_EQUAL,
+                            ]
+                        );
+
+                        return true;
+                    }),
+                ],
+            );
+
+        $this->subscriber->onGenerateSegmentFilters($event);
+
+        $choices = $event->getChoices();
+        $this->assertIsArray($choices);
+        $this->assertArrayHasKey('custom_object', $choices);
+        $this->assertArrayHasKey('cmo_1', $choices['custom_object']);
+        $this->assertArrayHasKey('cmf_2', $choices['custom_object']);
+        $this->assertSame('Products Mobile', $choices['custom_object']['cmo_1']['label']);
+        $this->assertSame('Products : Purchase Date', $choices['custom_object']['cmf_2']['label']);
+        $this->assertSame(
+            [
+                'After'                  => OperatorOptions::GREATER_THAN,
+                'After (Including day)'  => OperatorOptions::GREATER_THAN_OR_EQUAL,
+                'Before'                 => OperatorOptions::LESS_THAN,
+                'Before (Including day)' => OperatorOptions::LESS_THAN_OR_EQUAL,
+            ],
+            $choices['custom_object']['cmf_2']['operators']
+        );
     }
 
     public function testGetSubscribedEvents(): void
