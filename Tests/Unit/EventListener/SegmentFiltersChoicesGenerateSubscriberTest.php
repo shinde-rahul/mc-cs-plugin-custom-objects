@@ -151,13 +151,11 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                     'label'       => 'between',
                     'expr'        => 'between',
                     'negate_expr' => 'notBetween',
-                    'hide'        => true,
                 ],
             '!between' => [
                     'label'       => 'not between',
                     'expr'        => 'notBetween',
                     'negate_expr' => 'between',
-                    'hide'        => true,
                 ],
             'in' => [
                     'label'       => 'including',
@@ -216,6 +214,8 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             'less than or equal'    => 'lte',
             'empty'                 => 'empty',
             'not empty'             => '!empty',
+            'between' => 'between',
+            'not between' => '!between',
         ];
 
         $event = new LeadListFiltersChoicesEvent([], [], $this->translator);
@@ -258,6 +258,8 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                 ['mautic.lead.list.form.operator.isnotempty'],
                 ['mautic.lead.list.form.operator.islike'],
                 ['mautic.lead.list.form.operator.isnotlike'],
+                ['mautic.lead.list.form.operator.between'],
+                ['mautic.lead.list.form.operator.notbetween'],
                 ['mautic.lead.list.form.operator.regexp'],
                 ['mautic.lead.list.form.operator.notregexp'],
                 ['mautic.core.operator.starts.with'],
@@ -272,6 +274,8 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                 'not empty',
                 'like',
                 'not like',
+                'between',
+                'not between',
                 'regexp',
                 'not regexp',
                 'starts with',
