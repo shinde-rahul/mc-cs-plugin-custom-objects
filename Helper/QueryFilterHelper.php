@@ -93,7 +93,8 @@ class QueryFilterHelper
                 $tableAlias,
                 $filter->getOperator(),
                 $valueParameter,
-                $filterAlreadyNegated
+                $filterAlreadyNegated,
+                $filter->getParameterValue()
             );
 
             $this->addOperatorExpression(
@@ -157,15 +158,16 @@ class QueryFilterHelper
     /**
      * Form the logical expression needed to limit the CustomValue's value for given operator.
      *
-     * @return CompositeExpression|string
+     * @param float|bool|array<mixed>|string|null $filterParameterValue
      */
     private function getCustomValueValueExpression(
         SegmentQueryBuilder $customQuery,
         string $tableAlias,
         string $operator,
         string $valueParameter,
-        bool $alreadyNegated = false
-    ) {
+        bool $alreadyNegated = false,
+        float|bool|array|string $filterParameterValue = null,
+    ): CompositeExpression|string {
         if ($alreadyNegated) {
             switch ($operator) {
                 case 'empty':
@@ -220,6 +222,17 @@ class QueryFilterHelper
                 );
 
                 break;
+            case 'between':
+            case 'notBetween':
+                if (is_array($filterParameterValue)) {
+                    $expression = $customQuery->expr()->{$operator}(
+                        $tableAlias.'_value.value',
+                        array_values($filterParameterValue)
+                    );
+                    break;
+                }
+
+                // no break
             default:
                 $expression     = $customQuery->expr()->{$operator}(
                     $tableAlias.'_value.value',
