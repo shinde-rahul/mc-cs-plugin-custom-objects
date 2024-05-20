@@ -155,14 +155,14 @@ class QueryFilterHelper
     /**
      * Form the logical expression needed to limit the CustomValue's value for given operator.
      *
-     * @param float|bool|array<mixed>|string|null $filterParameterValue
+     * @param mixed $filterParameterValue
      */
     private function getCustomValueValueExpression(
         SegmentQueryBuilder $customQuery,
         string $tableAlias,
         string $operator,
         string $valueParameter,
-        float|bool|array|string $filterParameterValue = null,
+        $filterParameterValue = null,
     ): CompositeExpression|string {
         switch ($operator) {
             case 'empty':
