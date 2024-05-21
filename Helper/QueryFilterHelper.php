@@ -93,7 +93,8 @@ class QueryFilterHelper
                 $tableAlias,
                 $filter->getOperator(),
                 $valueParameter,
-                $filterAlreadyNegated
+                $valueParameter,
+                $filter->getParameterValue()
             );
 
             $this->addOperatorExpression(
@@ -157,6 +158,8 @@ class QueryFilterHelper
     /**
      * Form the logical expression needed to limit the CustomValue's value for given operator.
      *
+     * @param mixed $filterParameterValue
+     *
      * @return CompositeExpression|string
      */
     private function getCustomValueValueExpression(
@@ -164,7 +167,8 @@ class QueryFilterHelper
         string $tableAlias,
         string $operator,
         string $valueParameter,
-        bool $alreadyNegated = false
+        bool $alreadyNegated = false,
+        $filterParameterValue = null
     ) {
         if ($alreadyNegated) {
             switch ($operator) {
@@ -220,6 +224,17 @@ class QueryFilterHelper
                 );
 
                 break;
+            case 'between':
+            case 'notBetween':
+                if (is_array($filterParameterValue)) {
+                    $expression = $customQuery->expr()->{$operator}(
+                        $tableAlias.'_value.value',
+                        array_values($filterParameterValue)
+                    );
+                    break;
+                }
+
+                // no break
             default:
                 $expression     = $customQuery->expr()->{$operator}(
                     $tableAlias.'_value.value',
