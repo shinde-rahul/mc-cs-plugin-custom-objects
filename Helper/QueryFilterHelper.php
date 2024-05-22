@@ -93,6 +93,7 @@ class QueryFilterHelper
                 $tableAlias,
                 $filter->getOperator(),
                 $valueParameter,
+                $filterAlreadyNegated,
                 $filter->getParameterValue()
             );
 
