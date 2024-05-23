@@ -112,6 +112,23 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
                 ],
             ]
         );
+
+        $this->assertMatchWhere(
+            'test_value.value BETWEEN 0 AND 10',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_object_product')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'int',
+                'operator'   => 'between',
+                'properties' => [
+                    'filter' => [
+                        'number_from' => 0,
+                        'number_to'   => 10,
+                    ],
+                ],
+            ]
+        );
     }
 
     protected function assertMatchWhere(string $expectedWhere, array $filter): void
