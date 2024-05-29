@@ -232,20 +232,10 @@ class QueryFilterHelper
                         array_map(function (mixed $val) use ($customQuery): mixed {
                             return is_numeric($val) && intval($val) === $val ?
                                 $val : $customQuery->expr()->literal($val);
-                        }, $filterParameterValue)
-                    );
-                }
-                break;
-            case 'between':
-            case 'notBetween':
-                if (is_array($filterParameterValue)) {
-                    $expression = $customQuery->expr()->{$operator}(
-                        $tableAlias.'_value.value',
-                        array_values($filterParameterValue)
+                        }, array_values($filterParameterValue))
                     );
                     break;
                 }
-
                 // no break
             default:
                 $expression     = $customQuery->expr()->{$operator}(
