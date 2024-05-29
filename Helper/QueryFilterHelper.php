@@ -222,7 +222,8 @@ class QueryFilterHelper
                     $customQuery->expr()->isNull($tableAlias.'_value.value'),
                     $customQuery->expr()->like($tableAlias.'_value.value', ":${valueParameter}")
                 );
-                // no break
+
+                break;
             case 'between':
             case 'notBetween':
                 if (is_array($filterParameterValue)) {
@@ -233,7 +234,6 @@ class QueryFilterHelper
                                 $val : $customQuery->expr()->literal($val);
                         }, $filterParameterValue)
                     );
-                    break;
                 }
                 break;
             case 'between':
