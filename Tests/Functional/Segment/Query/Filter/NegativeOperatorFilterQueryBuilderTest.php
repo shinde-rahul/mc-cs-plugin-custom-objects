@@ -136,6 +136,7 @@ class NegativeOperatorFilterQueryBuilderTest extends MauticMysqlTestCase
     {
         $segment = new LeadList();
         $segment->setName('Segment A');
+        $segment->setPublicName('Segment A');
         $segment->setAlias('segment-a');
         $segment->setFilters($filters);
         $this->em->persist($segment);
