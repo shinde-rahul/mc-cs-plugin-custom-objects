@@ -26,7 +26,7 @@ class QueryFilterFactoryTest extends TestCase
      */
     private $segmentFilter;
 
-    private string $prefix = '';
+    private ?string $prefix = '';
 
     public function setUp(): void
     {
