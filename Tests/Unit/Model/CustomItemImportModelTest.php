@@ -113,6 +113,10 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
         $this->descriptionField->method('getTypeObject')->willReturn($textareaType);
         $this->dateField->method('getId')->willReturn(34);
         $this->dateField->method('getTypeObject')->willReturn($dateTimeType);
+
+        if (!method_exists(LeadRepository::class, 'exists')) {
+            $this->markTestSkipped();
+        }
     }
 
     public function testImportForCreated(): void
