@@ -9,6 +9,7 @@ use Mautic\LeadBundle\Command\UpdateLeadListsCommand;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadList;
 use Mautic\LeadBundle\Entity\ListLead;
+use Mautic\LeadBundle\Segment\ContactSegmentFilterCrate;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
@@ -25,6 +26,10 @@ class NegativeOperatorFilterQueryBuilderTest extends MauticMysqlTestCase
     protected function setUp(): void
     {
         $mergeFilterEnabled = ' with data set "Merge filter enabled"' === $this->getDataSetAsString(false);
+
+        if ($mergeFilterEnabled && !method_exists(ContactSegmentFilterCrate::class, 'getMergedProperty')) {
+            $this->markTestSkipped();
+        }
 
         $this->configParams['custom_object_merge_filter']                         = $mergeFilterEnabled;
         $this->configParams['custom_object_item_value_to_contact_relation_limit'] = $mergeFilterEnabled ? 0 : 3;
