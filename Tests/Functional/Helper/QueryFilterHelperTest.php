@@ -146,6 +146,34 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
                 ],
             ]
         );
+
+        $this->assertMatchWhere(
+            'test_value.value IS NULL',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_object_product')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'empty',
+                'properties' => [
+                    'filter' => [],
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value IS NOT NULL',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_object_product')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => '!empty',
+                'properties' => [
+                    'filter' => [],
+                ],
+            ]
+        );
     }
 
     protected function assertMatchWhere(string $expectedWhere, array $filter): void
