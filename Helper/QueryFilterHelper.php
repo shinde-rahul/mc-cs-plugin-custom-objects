@@ -462,7 +462,9 @@ class QueryFilterHelper
                 $qb,
                 $alias,
                 $filter,
-                $valueParameter
+                $valueParameter,
+                false,
+                $filter->getParameterValue()
             );
         }
 
