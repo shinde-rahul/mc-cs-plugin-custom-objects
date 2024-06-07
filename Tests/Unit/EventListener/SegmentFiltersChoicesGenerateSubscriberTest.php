@@ -22,6 +22,7 @@ use MauticPlugin\CustomObjectsBundle\EventListener\SegmentFiltersChoicesGenerate
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
+use MauticPlugin\CustomObjectsBundle\Tests\ProjectVersionTrait;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -29,6 +30,8 @@ use Symfony\Component\Translation\TranslatorInterface;
 
 class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 {
+    use ProjectVersionTrait;
+
     /**
      * @var CustomObjectRepository|MockObject
      */
@@ -59,9 +62,15 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
      */
     private $filterOperatorProvider;
 
-    private MockObject|TypeOperatorProviderInterface $typeOperatorProvider;
+    /**
+     * @var MockObject|TypeOperatorProviderInterface
+     */
+    private $typeOperatorProvider;
 
-    private MockObject|EventDispatcherInterface $dispatcher;
+    /**
+     * @var MockObject|EventDispatcherInterface
+     */
+    private $dispatcher;
 
     public function setUp(): void
     {
@@ -222,7 +231,12 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                 ],
         ];
 
-        $fieldOperators = [
+        $betweenOperators = $this->isCloudProject() ? [
+            'between'               => 'between',
+            'not between'           => '!between',
+        ] : [];
+
+        $fieldOperators = array_merge([
             'equals'                => '=',
             'not equal'             => '!=',
             'greater than'          => 'gt',
@@ -231,9 +245,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             'less than or equal'    => 'lte',
             'empty'                 => 'empty',
             'not empty'             => '!empty',
-            'between'               => 'between',
-            'not between'           => '!between',
-        ];
+        ], $betweenOperators);
 
         $event = new LeadListFiltersChoicesEvent([], [], $this->translator);
 
@@ -250,70 +262,74 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             ->with($criteria)
             ->willReturn(new ArrayCollection([$customObject]));
 
+        $translationsKeys = array_filter([
+            ['custom.item.name.label'],
+            ['mautic.lead.list.form.operator.equals'],
+            ['mautic.lead.list.form.operator.notequals'],
+            ['mautic.lead.list.form.operator.isempty'],
+            ['mautic.lead.list.form.operator.isnotempty'],
+            ['mautic.lead.list.form.operator.islike'],
+            ['mautic.lead.list.form.operator.isnotlike'],
+            ['mautic.lead.list.form.operator.regexp'],
+            ['mautic.lead.list.form.operator.notregexp'],
+            ['mautic.core.operator.starts.with'],
+            ['mautic.core.operator.ends.with'],
+            ['mautic.core.operator.contains'],
+            ['mautic.lead.list.form.operator.equals'],
+            ['mautic.lead.list.form.operator.notequals'],
+            ['mautic.lead.list.form.operator.greaterthan'],
+            ['mautic.lead.list.form.operator.greaterthanequals'],
+            ['mautic.lead.list.form.operator.lessthan'],
+            ['mautic.lead.list.form.operator.lessthanequals'],
+            ['mautic.lead.list.form.operator.isempty'],
+            ['mautic.lead.list.form.operator.isnotempty'],
+            ['mautic.lead.list.form.operator.islike'],
+            ['mautic.lead.list.form.operator.isnotlike'],
+            $this->isCloudProject() ? ['mautic.lead.list.form.operator.between'] : null,
+            $this->isCloudProject() ? ['mautic.lead.list.form.operator.notbetween'] : null,
+            ['mautic.lead.list.form.operator.regexp'],
+            ['mautic.lead.list.form.operator.notregexp'],
+            ['mautic.core.operator.starts.with'],
+            ['mautic.core.operator.ends.with'],
+            ['mautic.core.operator.contains'],
+        ]);
+
+        $translations = array_filter([
+            'Mobile',
+            'equals',
+            'not equal',
+            'empty',
+            'not empty',
+            'like',
+            'not like',
+            'regexp',
+            'not regexp',
+            'starts with',
+            'ends with',
+            'contains',
+            'equals',
+            'not equal',
+            'greater than',
+            'greater than or equal',
+            'less than',
+            'less than or equal',
+            'empty',
+            'not empty',
+            'like',
+            'not like',
+            $this->isCloudProject() ? 'between' : null,
+            $this->isCloudProject() ? 'not between' : null,
+            'regexp',
+            'not regexp',
+            'starts with',
+            'ends with',
+            'contains',
+        ]);
+
         $this->translator
             ->method('trans')
-            ->withConsecutive(
-                ['custom.item.name.label'],
-                ['mautic.lead.list.form.operator.equals'],
-                ['mautic.lead.list.form.operator.notequals'],
-                ['mautic.lead.list.form.operator.isempty'],
-                ['mautic.lead.list.form.operator.isnotempty'],
-                ['mautic.lead.list.form.operator.islike'],
-                ['mautic.lead.list.form.operator.isnotlike'],
-                ['mautic.lead.list.form.operator.regexp'],
-                ['mautic.lead.list.form.operator.notregexp'],
-                ['mautic.core.operator.starts.with'],
-                ['mautic.core.operator.ends.with'],
-                ['mautic.core.operator.contains'],
-                ['mautic.lead.list.form.operator.equals'],
-                ['mautic.lead.list.form.operator.notequals'],
-                ['mautic.lead.list.form.operator.greaterthan'],
-                ['mautic.lead.list.form.operator.greaterthanequals'],
-                ['mautic.lead.list.form.operator.lessthan'],
-                ['mautic.lead.list.form.operator.lessthanequals'],
-                ['mautic.lead.list.form.operator.isempty'],
-                ['mautic.lead.list.form.operator.isnotempty'],
-                ['mautic.lead.list.form.operator.islike'],
-                ['mautic.lead.list.form.operator.isnotlike'],
-                ['mautic.lead.list.form.operator.between'],
-                ['mautic.lead.list.form.operator.notbetween'],
-                ['mautic.lead.list.form.operator.regexp'],
-                ['mautic.lead.list.form.operator.notregexp'],
-                ['mautic.core.operator.starts.with'],
-                ['mautic.core.operator.ends.with'],
-                ['mautic.core.operator.contains']
-            )
-            ->willReturn(
-                'Mobile',
-                'equals',
-                'not equal',
-                'empty',
-                'not empty',
-                'like',
-                'not like',
-                'regexp',
-                'not regexp',
-                'starts with',
-                'ends with',
-                'contains',
-                'equals',
-                'not equal',
-                'greater than',
-                'greater than or equal',
-                'less than',
-                'less than or equal',
-                'empty',
-                'not empty',
-                'like',
-                'not like',
-                'between',
-                'not between',
-                'regexp',
-                'not regexp',
-                'starts with',
-                'ends with',
-                'contains'
-            );
+            ->withConsecutive(...$translationsKeys)
+            ->willReturn(...$translations);
 
         $this->filterOperatorProvider->expects($this->any())
             ->method('getAllOperators')
