@@ -58,6 +58,8 @@ class CustomFieldFilterQueryBuilder extends BaseFilterQueryBuilder
             case 'neq':
             case 'notLike':
             case '!multiselect':
+            case '!between':
+            case 'notBetween':
                 $queryBuilder->addLogic(
                     $queryBuilder->expr()->notExists($unionQueryContainer->getSQL()),
                     $filter->getGlue()

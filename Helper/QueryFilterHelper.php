@@ -179,6 +179,10 @@ class QueryFilterHelper
                 case 'neq':
                     $operator = 'eq';
                     break;
+                case '!between':
+                case 'notBetween':
+                    $operator = 'between';
+                    break;
             }
         }
 
