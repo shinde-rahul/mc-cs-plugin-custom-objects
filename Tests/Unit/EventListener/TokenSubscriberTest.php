@@ -143,6 +143,7 @@ class TokenSubscriberTest extends TestCase
                 EmailEvents::EMAIL_ON_SEND                       => ['decodeTokens', 0],
                 EmailEvents::EMAIL_ON_DISPLAY                    => ['decodeTokens', 0],
                 CustomItemEvents::ON_CUSTOM_ITEM_LIST_DBAL_QUERY => ['onListQuery', -1],
+                EmailEvents::TOKEN_REPLACEMENT                   => ['onTokenReplacement', 100],
             ],
             TokenSubscriber::getSubscribedEvents()
         );
