@@ -74,7 +74,7 @@ class PreviewFunctionalTest extends MauticMysqlTestCase
                             'filters' => [
                                 [
                                     'glue'     => 'and',
-                                    'field'    => 'cmf_1',
+                                    'field'    => 'cmf_'.$textValue->getCustomField()->getId(),
                                     'object'   => 'custom_object',
                                     'type'     => 'text',
                                     'filter'   => 'abracadabra',
