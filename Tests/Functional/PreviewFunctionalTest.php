@@ -90,7 +90,7 @@ class PreviewFunctionalTest extends MauticMysqlTestCase
         $this->em->persist($email);
         $this->em->flush();
 
-        $this->customItemModel->linkEntity($customItem, 'contact', $lead->getId());
+        $this->customItemModel->linkEntity($customItem, 'contact', (int) $lead->getId());
 
         $url                    = "/email/preview/{$email->getId()}";
         $urlWithContact         = "{$url}?contactId={$lead->getId()}";
