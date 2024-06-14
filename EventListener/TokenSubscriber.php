@@ -336,16 +336,19 @@ class TokenSubscriber implements EventSubscriberInterface
 
         $lead      = $event->getLead();
         $tokenData = $clickthrough['dynamicContent'];
+        $tokens    = $clickthrough['tokens'];
 
         foreach ($tokenData as $data) {
             // Default content
             $filterContent = $data['content'];
 
+            $isCustomObject = false;
             foreach ($data['filters'] as $filter) {
                 foreach ($filter['filters'] as $condition) {
                     if ('custom_object' !== $condition['object'] || empty($condition['display'])) {
                         continue;
                     }
+                    $isCustomObject = true;
 
                     list($customObjectAlias, $customItemAlias) = array_map(
                         function ($part) {
@@ -357,13 +360,15 @@ class TokenSubscriber implements EventSubscriberInterface
                     $lead[$condition['field']] = $result;
                 }
 
-                if ($this->matchFilterForLead($filter['filters'], $lead)) {
+                if ($isCustomObject && $this->matchFilterForLead($filter['filters'], $lead)) {
                     $filterContent = $filter['content'];
                     break;
                 }
             }
 
-            $event->addToken('{dynamiccontent="'.$data['tokenName'].'"}', $filterContent);
+            if ($isCustomObject) {
+                $event->addToken('{dynamiccontent="'.$data['tokenName'].'"}', $filterContent);
+            }
         }
     }
 
