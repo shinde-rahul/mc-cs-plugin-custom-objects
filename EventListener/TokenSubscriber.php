@@ -7,6 +7,7 @@ namespace MauticPlugin\CustomObjectsBundle\EventListener;
 use Mautic\CampaignBundle\Entity\Event;
 use Mautic\CampaignBundle\Model\EventModel;
 use Mautic\CoreBundle\Event\BuilderEvent;
+use Mautic\CoreBundle\Event\TokenReplacementEvent;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Event\EmailSendEvent;
@@ -121,6 +122,7 @@ class TokenSubscriber implements EventSubscriberInterface
             EmailEvents::EMAIL_ON_SEND                       => ['decodeTokens', 0],
             EmailEvents::EMAIL_ON_DISPLAY                    => ['decodeTokens', 0],
             CustomItemEvents::ON_CUSTOM_ITEM_LIST_DBAL_QUERY => ['onListQuery', -1],
+            EmailEvents::TOKEN_REPLACEMENT                   => ['onTokenReplacement', 100],
         ];
     }
 
@@ -322,5 +324,95 @@ class TokenSubscriber implements EventSubscriberInterface
         }
 
         return $fieldValues;
+    }
+
+    public function onTokenReplacement(TokenReplacementEvent $event): void
+    {
+        $clickthrough = $event->getClickthrough();
+
+        if (!array_key_exists('dynamicContent', $clickthrough)) {
+            return;
+        }
+
+        $lead      = $event->getLead();
+        $tokenData = $clickthrough['dynamicContent'];
+        $tokens    = $clickthrough['tokens'];
+
+        foreach ($tokenData as $data) {
+            // Default content
+            $filterContent = $data['content'];
+
+            $isCustomObject = false;
+            foreach ($data['filters'] as $filter) {
+                foreach ($filter['filters'] as $condition) {
+                    if ('custom_object' !== $condition['object'] || empty($condition['display'])) {
+                        continue;
+                    }
+                    $isCustomObject = true;
+
+                    list($customObjectAlias, $customItemAlias) = array_map(
+                        function ($part) {
+                            return trim($part);
+                        }, explode(':', $condition['display']));
+
+                    $customObject              = $this->customObjectModel->fetchEntityByAlias($customObjectAlias);
+                    $result                    = $this->getCustomItemValue($customObject, (int) $lead['id'], $customItemAlias);
+                    $lead[$condition['field']] = $result;
+                }
+
+                if ($isCustomObject && $this->matchFilterForLead($filter['filters'], $lead)) {
+                    $filterContent = $filter['content'];
+                    break;
+                }
+            }
+
+            if ($isCustomObject) {
+                $event->addToken('{dynamiccontent="'.$data['tokenName'].'"}', $filterContent);
+            }
+        }
+    }
+
+    /**
+     * @throws InvalidCustomObjectFormatListException
+     */
+    public function getCustomItemValue(CustomObject $customObject, int $id, string $customItemAlias): string
+    {
+        $orderBy  = CustomItem::TABLE_ALIAS.'.id';
+        $orderDir = 'DESC';
+
+        $tableConfig = new TableConfig(1, 1, $orderBy, $orderDir);
+        $tableConfig->addParameter('customObjectId', $customObject->getId());
+        $tableConfig->addParameter('filterEntityType', 'contact');
+        $tableConfig->addParameter('filterEntityId', (int) $id);
+        $tableConfig->addParameter('token', $customItemAlias);
+        $customItems = $this->customItemModel->getArrayTableData($tableConfig);
+        $fieldValues = [];
+
+        foreach ($customItems as $customItemData) {
+            // Name is known from the CI data array.
+            if ('name' === $customItemAlias) {
+                $fieldValues[] = $customItemData['name'];
+
+                continue;
+            }
+
+            // Custom Field values are handled like this.
+            $customItem = new CustomItem($customObject);
+            $customItem->populateFromArray($customItemData);
+            $customItem = $this->customItemModel->populateCustomFields($customItem);
+
+            try {
+                $fieldValue = $customItem->findCustomFieldValueForFieldAlias($customItemAlias);
+                // If the CO item doesn't have a value, get the default value
+                if (empty($fieldValue->getValue())) {
+                    $fieldValue->setValue($fieldValue->getCustomField()->getDefaultValue());
+                }
+                $fieldValues[] = $fieldValue->getCustomField()->getTypeObject()->valueToString($fieldValue);
+            } catch (NotFoundException $e) {
+                // Custom field not found.
+            }
+        }
+
+        return $this->tokenFormatter->format($fieldValues, TokenFormatter::DEFAULT_FORMAT);
     }
 }
