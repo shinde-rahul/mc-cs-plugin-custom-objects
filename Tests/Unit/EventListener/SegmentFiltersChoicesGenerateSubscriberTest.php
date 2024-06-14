@@ -63,12 +63,12 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
     private $filterOperatorProvider;
 
     /**
-     * @var MockObject|TypeOperatorProviderInterface
+     * @var TypeOperatorProviderInterface|MockObject
      */
     private $typeOperatorProvider;
 
     /**
-     * @var MockObject|EventDispatcherInterface
+     * @var EventDispatcherInterface|MockObject
      */
     private $dispatcher;
 
@@ -98,6 +98,10 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 
     public function testOnGenerateSegmentFilters(): void
     {
+        if (!$this->isCloudProject()) {
+            $this->markTestSkipped('Undefined index: default on TypeOperatorProvider.php:61 in 4.4');
+        }
+
         $customObject = new CustomObject();
         $customObject->setId(1);
         $customObject->setNameSingular('Product');
@@ -231,10 +235,10 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                 ],
         ];
 
-        $betweenOperators = $this->isCloudProject() ? [
+        $betweenOperators = [
             'between'               => 'between',
             'not between'           => '!between',
-        ] : [];
+        ];
 
         $fieldOperators = array_merge([
             'equals'                => '=',
@@ -285,8 +289,8 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             ['mautic.lead.list.form.operator.isnotempty'],
             ['mautic.lead.list.form.operator.islike'],
             ['mautic.lead.list.form.operator.isnotlike'],
-            $this->isCloudProject() ? ['mautic.lead.list.form.operator.between'] : null,
-            $this->isCloudProject() ? ['mautic.lead.list.form.operator.notbetween'] : null,
+            ['mautic.lead.list.form.operator.between'],
+            ['mautic.lead.list.form.operator.notbetween'],
             ['mautic.lead.list.form.operator.regexp'],
             ['mautic.lead.list.form.operator.notregexp'],
             ['mautic.core.operator.starts.with'],
@@ -317,8 +321,8 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             'not empty',
             'like',
             'not like',
-            $this->isCloudProject() ? 'between' : null,
-            $this->isCloudProject() ? 'not between' : null,
+            'between',
+            'not between',
             'regexp',
             'not regexp',
             'starts with',
@@ -349,6 +353,10 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 
     public function testOnGenerateSegmentFiltersForDate(): void
     {
+        if (!$this->isCloudProject()) {
+            $this->markTestSkipped('OVERRIDE_OPERATOR_LABEL_FOR_FIELD_TYPE event is not present in 4.4');
+        }
+
         $customObject = new CustomObject();
         $customObject->setId(1);
         $customObject->setNameSingular('Product');
