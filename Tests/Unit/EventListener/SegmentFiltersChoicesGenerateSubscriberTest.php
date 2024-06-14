@@ -266,7 +266,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             ->with($criteria)
             ->willReturn(new ArrayCollection([$customObject]));
 
-        $translationsKeys = array_filter([
+        $translationsKeys = [
             ['custom.item.name.label'],
             ['mautic.lead.list.form.operator.equals'],
             ['mautic.lead.list.form.operator.notequals'],
@@ -296,9 +296,9 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             ['mautic.core.operator.starts.with'],
             ['mautic.core.operator.ends.with'],
             ['mautic.core.operator.contains'],
-        ]);
+        ];
 
-        $translations = array_filter([
+        $translations = [
             'Mobile',
             'equals',
             'not equal',
@@ -328,7 +328,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
             'starts with',
             'ends with',
             'contains',
-        ]);
+        ];
 
         $this->translator
             ->method('trans')
