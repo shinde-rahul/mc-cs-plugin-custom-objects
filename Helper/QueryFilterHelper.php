@@ -93,7 +93,8 @@ class QueryFilterHelper
                 $tableAlias,
                 $filter,
                 $valueParameter,
-                $filterAlreadyNegated
+                $filterAlreadyNegated,
+                $filter->getParameterValue()
             );
 
             $this->addOperatorExpression(
@@ -157,6 +158,8 @@ class QueryFilterHelper
     /**
      * Form the logical expression needed to limit the CustomValue's value for given operator.
      *
+     * @param mixed $filterParameterValue
+     *
      * @return CompositeExpression|string
      */
     private function getCustomValueValueExpression(
@@ -164,7 +167,8 @@ class QueryFilterHelper
         string $tableAlias,
         ContactSegmentFilter $filter,
         string $valueParameter,
-        bool $alreadyNegated = false
+        bool $alreadyNegated = false,
+        $filterParameterValue = null
     ) {
         $operator = $filter->getOperator();
         if ($alreadyNegated) {
@@ -174,6 +178,10 @@ class QueryFilterHelper
                     break;
                 case 'neq':
                     $operator = 'eq';
+                    break;
+                case '!between':
+                case 'notBetween':
+                    $operator = 'between';
                     break;
             }
         }
@@ -228,6 +236,19 @@ class QueryFilterHelper
                 );
 
                 break;
+            case 'between':
+            case 'notBetween':
+                if (is_array($filterParameterValue)) {
+                    $expression = $customQuery->expr()->{$operator}(
+                        $tableAlias.'_value.value',
+                        array_map(function (mixed $val) use ($customQuery): mixed {
+                            return is_numeric($val) && intval($val) === $val ?
+                                $val : $customQuery->expr()->literal($val);
+                        }, array_values($filterParameterValue))
+                    );
+                    break;
+                }
+                // no break
             default:
                 $expression     = $customQuery->expr()->{$operator}(
                     $tableAlias.'_value.value',
@@ -445,7 +466,9 @@ class QueryFilterHelper
                 $qb,
                 $alias,
                 $filter,
-                $valueParameter
+                $valueParameter,
+                false,
+                $filter->getParameterValue()
             );
         }
 

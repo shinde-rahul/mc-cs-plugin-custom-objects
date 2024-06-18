@@ -20,6 +20,7 @@ parameters:
 		- Serializer/ApiNormalizer.php # PHPSTAN is confused because it exists only if API Platform does.
 		- Tests/Unit/Serializer/ApiNormalizerTest.php # PHPSTAN is confused because it exists only if API Platform does.
 		- DataPersister/CustomItemDataPersister.php # PHPSTAN is confused because it exists only if API Platform does.
+		- Tests/Unit/EventListener/SegmentFiltersChoicesGenerateSubscriberTest.php
 	dynamicConstantNames:
 		- MAUTIC_ENV
 		- MAUTIC_TABLE_PREFIX
