@@ -12,12 +12,14 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldValueModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
+use MauticPlugin\CustomObjectsBundle\Tests\ProjectVersionTrait;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class PreviewFunctionalTest extends MauticMysqlTestCase
 {
     use CustomObjectsTrait;
+    use ProjectVersionTrait;
 
     /**
      * @var CustomItemModel
@@ -39,6 +41,10 @@ class PreviewFunctionalTest extends MauticMysqlTestCase
 
     public function testPreviewPageCODynamicContent(): void
     {
+        if (!$this->isCloudProject()) {
+            $this->markTestSkipped('Not supported in 4.4');
+        }
+
         $customObject = $this->createCustomObjectWithAllFields(self::$container, 'Car');
         $customItem   = new CustomItem($customObject);
 
