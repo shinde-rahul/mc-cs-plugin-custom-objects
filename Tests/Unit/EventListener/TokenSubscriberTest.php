@@ -29,6 +29,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Helper\TokenFormatter;
 use MauticPlugin\CustomObjectsBundle\Helper\TokenParser;
+use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
@@ -64,6 +65,11 @@ class TokenSubscriberTest extends TestCase
      * @var CustomItemModel|MockObject
      */
     private $customItemModel;
+
+    /**
+     * @var CustomFieldModel|MockObject
+     */
+    private $customFieldModel;
 
     /**
      * @var TokenParser|MockObject
@@ -114,6 +120,7 @@ class TokenSubscriberTest extends TestCase
         $this->queryFilterFactory = $this->createMock(QueryFilterFactory::class);
         $this->customObjectModel  = $this->createMock(CustomObjectModel::class);
         $this->customItemModel    = $this->createMock(CustomItemModel::class);
+        $this->customFieldModel   = $this->createMock(CustomFieldModel::class);
         $this->tokenParser        = $this->createMock(TokenParser::class);
         $this->eventModel         = $this->createMock(EventModel::class);
         $this->eventDispatcher    = $this->createMock(EventDispatcher::class);
@@ -124,6 +131,7 @@ class TokenSubscriberTest extends TestCase
             $this->queryFilterFactory,
             $this->customObjectModel,
             $this->customItemModel,
+            $this->customFieldModel,
             $this->tokenParser,
             $this->eventModel,
             $this->eventDispatcher,
@@ -845,6 +853,7 @@ class TokenSubscriberTest extends TestCase
             $this->queryFilterFactory,
             $this->customObjectModel,
             $this->customItemModel,
+            $this->customFieldModel,
             $this->tokenParser,
             $this->eventModel,
             $this->eventDispatcher,

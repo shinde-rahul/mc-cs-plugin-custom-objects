@@ -863,6 +863,7 @@ $coParams = [
                     'custom_object.query.filter.factory',
                     'mautic.custom.model.object',
                     'mautic.custom.model.item',
+                    'mautic.custom.model.field',
                     'custom_object.token.parser',
                     'mautic.campaign.model.event',
                     'event_dispatcher',
