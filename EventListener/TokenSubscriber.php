@@ -428,11 +428,15 @@ class TokenSubscriber implements EventSubscriberInterface
                 }
 
                 if ('cmf_' === substr($condition['field'], 0, 4)) {
-                    $customField  = $this->customFieldModel->fetchEntity((int) explode('cmf_', $condition['field'])[1]);
+                    $customField  = $this->customFieldModel->fetchEntity(
+                        (int) explode('cmf_', $condition['field'])[1]
+                    );
                     $customObject = $customField->getCustomObject();
                     $fieldAlias   = $customField->getAlias();
                 } elseif ('cmo_' === substr($condition['field'], 0, 4)) {
-                    $customObject = $this->customObjectModel->fetchEntity((int) explode('cmo_', $condition['field'])[1]);
+                    $customObject = $this->customObjectModel->fetchEntity(
+                        (int) explode('cmo_', $condition['field'])[1]
+                    );
                     $fieldAlias   = 'name';
                 } else {
                     continue;
