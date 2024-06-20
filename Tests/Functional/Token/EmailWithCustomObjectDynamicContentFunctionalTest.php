@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Token;
 
 use DateTime;
+use Doctrine\ORM\EntityRepository;
+use Doctrine\Persistence\ObjectRepository;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Entity\Stat;
-use Mautic\EmailBundle\Entity\StatRepository;
 use Mautic\EmailBundle\Model\EmailModel;
 use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
@@ -18,7 +19,6 @@ use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\Custom
 use PHPUnit\Framework\Assert;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestCase
 {
@@ -34,12 +34,24 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
      */
     private $customFieldValueModel;
 
+    /**
+     * @var EmailModel
+     */
+    private $emailModel;
+
+    /**
+     * @var EntityRepository|ObjectRepository
+     */
+    private $emailStatRepository;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->customItemModel       = self::$container->get('mautic.custom.model.item');
         $this->customFieldValueModel = self::$container->get('mautic.custom.model.field.value');
+        $this->emailModel            = self::$container->get('mautic.email.model.email');
+        $this->emailStatRepository   = $this->em->getRepository(Stat::class);
     }
 
     public function testEmailWithCustomObjectDynamicContent(): void
@@ -57,7 +69,7 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
 
         $lead1  = $this->createLead('nexon@tata.com');
         $lead2  = $this->createLead('noitem@tata.com');
-        $email = $this->createEmail();
+        $email  = $this->createEmail();
         $email->setDynamicContent(
             [
                 [
@@ -134,38 +146,25 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
         return $lead;
     }
 
-    /**
-     * @param EmailModel $emailModel
-     * @param Email $email
-     * @param Lead $lead
-     * @param StatRepository $emailStatRepository
-     * @return void
-     * @throws \Doctrine\ORM\ORMException
-     */
     public function sendAndAssetText(Email $email, Lead $lead, string $matchText): void
     {
-        /** @var EmailModel $emailModel */
-        $emailModel = self::$container->get('mautic.email.model.email');
-        $emailModel->sendEmail(
+        $this->emailModel->sendEmail(
             $email,
             [
                 [
-                    'id' => $lead->getId(),
-                    'email' => $lead->getEmail(),
+                    'id'        => $lead->getId(),
+                    'email'     => $lead->getEmail(),
                     'firstname' => $lead->getFirstname(),
-                    'lastname' => $lead->getLastname(),
+                    'lastname'  => $lead->getLastname(),
                 ],
             ]
         );
 
-        /** @var StatRepository $emailStatRepository */
-        $emailStatRepository = $this->em->getRepository(Stat::class);
-
         /** @var Stat|null $emailStat */
-        $emailStat = $emailStatRepository->findOneBy(
+        $emailStat = $this->emailStatRepository->findOneBy(
             [
                 'email' => $email->getId(),
-                'lead' => $lead->getId(),
+                'lead'  => $lead->getId(),
             ]
         );
 
