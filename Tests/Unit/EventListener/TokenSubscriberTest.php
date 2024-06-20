@@ -853,6 +853,7 @@ class TokenSubscriberTest extends TestCase
             $this->queryFilterFactory,
             $this->customObjectModel,
             $this->customItemModel,
+            $this->customFieldModel,
             $this->tokenParser,
             $this->eventModel,
             $this->eventDispatcher,
