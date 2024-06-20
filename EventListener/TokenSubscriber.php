@@ -380,7 +380,7 @@ class TokenSubscriber implements EventSubscriberInterface
         $tableConfig = new TableConfig(1, 1, $orderBy, $orderDir);
         $tableConfig->addParameter('customObjectId', $customObject->getId());
         $tableConfig->addParameter('filterEntityType', 'contact');
-        $tableConfig->addParameter('filterEntityId', (int) $id);
+        $tableConfig->addParameter('filterEntityId', $id);
         $tableConfig->addParameter('token', $customFieldAlias);
         $customItems = $this->customItemModel->getArrayTableData($tableConfig);
         $fieldValues = [];
