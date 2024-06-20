@@ -346,33 +346,15 @@ class TokenSubscriber implements EventSubscriberInterface
         $tokenData = $clickthrough['dynamicContent'];
 
         foreach ($tokenData as $data) {
-            // Default content
             $filterContent = $data['content'];
 
             $isCustomObject = false;
             foreach ($data['filters'] as $filter) {
-                foreach ($filter['filters'] as $condition) {
-                    if ('custom_object' !== $condition['object']) {
-                        continue;
-                    }
+                $customFieldValues = $this->getCustomFieldDataForLead($filter['filters'], (int) $lead['id']);
 
-                    if(substr( $condition['field'], 0, 4 ) === "cmf_"){
-                        $customField = $this->customFieldModel->fetchEntity((int) explode('cmf_', $condition['field'])[1]);
-                        $customObject = $customField->getCustomObject();
-                        $fieldAlias = $customField->getAlias();
-                        $result = $this->getCustomItemValue($customObject, (int) $lead['id'], $fieldAlias);
-                    } elseif (substr( $condition['field'], 0, 4 ) === "cmo_"){
-                        $customObject = $this->customObjectModel->fetchEntity((int) explode('cmo_', $condition['field'])[1]);
-                        $result = $this->getCustomItemValue($customObject, (int) $lead['id'], 'name');
-                    } else {
-                        continue;
-                    }
-
+                if (!empty($customFieldValues)) {
                     $isCustomObject = true;
-
-//                  $customObject              = $this->customObjectModel->fetchEntityByAlias($customObjectAlias);
-//                  $result                    = $this->getCustomItemValue($customObject, (int) $lead['id'], $customItemAlias);
-                  $lead[$condition['field']] = $result;
+                    $lead           = array_merge($lead, $customFieldValues);
                 }
 
                 if ($isCustomObject && $this->matchFilterForLead($filter['filters'], $lead)) {
@@ -390,7 +372,7 @@ class TokenSubscriber implements EventSubscriberInterface
     /**
      * @throws InvalidCustomObjectFormatListException
      */
-    public function getCustomItemValue(CustomObject $customObject, int $id, string $customItemAlias): string
+    private function getCustomFieldValue(CustomObject $customObject, int $id, string $customFieldAlias): string
     {
         $orderBy  = CustomItem::TABLE_ALIAS.'.id';
         $orderDir = 'DESC';
@@ -399,13 +381,13 @@ class TokenSubscriber implements EventSubscriberInterface
         $tableConfig->addParameter('customObjectId', $customObject->getId());
         $tableConfig->addParameter('filterEntityType', 'contact');
         $tableConfig->addParameter('filterEntityId', (int) $id);
-        $tableConfig->addParameter('token', $customItemAlias);
+        $tableConfig->addParameter('token', $customFieldAlias);
         $customItems = $this->customItemModel->getArrayTableData($tableConfig);
         $fieldValues = [];
 
         foreach ($customItems as $customItemData) {
             // Name is known from the CI data array.
-            if ('name' === $customItemAlias) {
+            if ('name' === $customFieldAlias) {
                 $fieldValues[] = $customItemData['name'];
 
                 continue;
@@ -417,7 +399,7 @@ class TokenSubscriber implements EventSubscriberInterface
             $customItem = $this->customItemModel->populateCustomFields($customItem);
 
             try {
-                $fieldValue = $customItem->findCustomFieldValueForFieldAlias($customItemAlias);
+                $fieldValue = $customItem->findCustomFieldValueForFieldAlias($customFieldAlias);
                 // If the CO item doesn't have a value, get the default value
                 if (empty($fieldValue->getValue())) {
                     $fieldValue->setValue($fieldValue->getCustomField()->getDefaultValue());
@@ -429,5 +411,41 @@ class TokenSubscriber implements EventSubscriberInterface
         }
 
         return $this->tokenFormatter->format($fieldValues, TokenFormatter::DEFAULT_FORMAT);
+    }
+
+    /**
+     * @param array<mixed> $filters
+     *
+     * @return array<mixed>
+     */
+    private function getCustomFieldDataForLead(array $filters, int $leadId): array
+    {
+        $customFieldValues = [];
+        foreach ($filters as $condition) {
+            try {
+                if ('custom_object' !== $condition['object']) {
+                    continue;
+                }
+
+                if ('cmf_' === substr($condition['field'], 0, 4)) {
+                    $customField  = $this->customFieldModel->fetchEntity((int) explode('cmf_', $condition['field'])[1]);
+                    $customObject = $customField->getCustomObject();
+                    $fieldAlias   = $customField->getAlias();
+                } elseif ('cmo_' === substr($condition['field'], 0, 4)) {
+                    $customObject = $this->customObjectModel->fetchEntity((int) explode('cmo_', $condition['field'])[1]);
+                    $fieldAlias   = 'name';
+                } else {
+                    continue;
+                }
+
+                $result = $this->getCustomFieldValue($customObject, $leadId, $fieldAlias);
+
+                $customFieldValues[$condition['field']] = $result;
+            } catch (NotFoundException|InvalidCustomObjectFormatListException $e) {
+                continue;
+            }
+        }
+
+        return $customFieldValues;
     }
 }
