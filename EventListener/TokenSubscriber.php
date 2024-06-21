@@ -96,6 +96,11 @@ class TokenSubscriber implements EventSubscriberInterface
      */
     private $tokenFormatter;
 
+    /**
+     * @var array<mixed>
+     */
+    private $customItems;
+
     public function __construct(
         ConfigProvider $configProvider,
         QueryFilterHelper $queryFilterHelper,
@@ -374,15 +379,7 @@ class TokenSubscriber implements EventSubscriberInterface
      */
     private function getCustomFieldValue(CustomObject $customObject, int $id, string $customFieldAlias): string
     {
-        $orderBy  = CustomItem::TABLE_ALIAS.'.id';
-        $orderDir = 'DESC';
-
-        $tableConfig = new TableConfig(1, 1, $orderBy, $orderDir);
-        $tableConfig->addParameter('customObjectId', $customObject->getId());
-        $tableConfig->addParameter('filterEntityType', 'contact');
-        $tableConfig->addParameter('filterEntityId', $id);
-        $tableConfig->addParameter('token', $customFieldAlias);
-        $customItems = $this->customItemModel->getArrayTableData($tableConfig);
+        $customItems = $this->getCustomItems($customObject, $id);
         $fieldValues = [];
 
         foreach ($customItems as $customItemData) {
@@ -451,5 +448,27 @@ class TokenSubscriber implements EventSubscriberInterface
         }
 
         return $customFieldValues;
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function getCustomItems(CustomObject $customObject, int $leadId): array
+    {
+        $key = $customObject->getAlias().'-'.$leadId;
+        if (isset($this->customItems[$key])) {
+            return $this->customItems[$key];
+        }
+
+        $orderBy  = CustomItem::TABLE_ALIAS.'.id';
+        $orderDir = 'DESC';
+
+        $tableConfig = new TableConfig(1, 1, $orderBy, $orderDir);
+        $tableConfig->addParameter('customObjectId', $customObject->getId());
+        $tableConfig->addParameter('filterEntityType', 'contact');
+        $tableConfig->addParameter('filterEntityId', $leadId);
+        $this->customItems[$key] = $this->customItemModel->getArrayTableData($tableConfig);
+
+        return $this->customItems[$key];
     }
 }
