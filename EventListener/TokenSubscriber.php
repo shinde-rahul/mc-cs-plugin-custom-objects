@@ -399,7 +399,7 @@ class TokenSubscriber implements EventSubscriberInterface
                     continue;
                 }
 
-                $key = $customObject->getAlias().'-'.$leadId;
+                $key = $customObject->getId().'-'.$leadId;
                 if (!isset($cachedCustomItems[$key])) {
                     $cachedCustomItems[$key] = $this->getCustomItems($customObject, $leadId);
                 }
