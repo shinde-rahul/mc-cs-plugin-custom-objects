@@ -456,7 +456,7 @@ class TokenSubscriber implements EventSubscriberInterface
     private function getCustomItems(CustomObject $customObject, int $leadId): array
     {
         $key = $customObject->getAlias().'-'.$leadId;
-        if ($this->customItems[$key]) {
+        if (isset($this->customItems[$key])) {
             return $this->customItems[$key];
         }
 
