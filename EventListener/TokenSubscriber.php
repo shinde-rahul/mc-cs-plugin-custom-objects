@@ -96,11 +96,6 @@ class TokenSubscriber implements EventSubscriberInterface
      */
     private $tokenFormatter;
 
-    /**
-     * @var array<mixed>
-     */
-    private $customItems;
-
     public function __construct(
         ConfigProvider $configProvider,
         QueryFilterHelper $queryFilterHelper,
@@ -375,11 +370,58 @@ class TokenSubscriber implements EventSubscriberInterface
     }
 
     /**
+     * @param array<mixed> $filters
+     *
+     * @return array<mixed>
+     */
+    private function getCustomFieldDataForLead(array $filters, int $leadId): array
+    {
+        $customFieldValues = $cachedCustomItems = [];
+
+        foreach ($filters as $condition) {
+            try {
+                if ('custom_object' !== $condition['object']) {
+                    continue;
+                }
+
+                if ('cmf_' === substr($condition['field'], 0, 4)) {
+                    $customField  = $this->customFieldModel->fetchEntity(
+                        (int) explode('cmf_', $condition['field'])[1]
+                    );
+                    $customObject = $customField->getCustomObject();
+                    $fieldAlias   = $customField->getAlias();
+                } elseif ('cmo_' === substr($condition['field'], 0, 4)) {
+                    $customObject = $this->customObjectModel->fetchEntity(
+                        (int) explode('cmo_', $condition['field'])[1]
+                    );
+                    $fieldAlias   = 'name';
+                } else {
+                    continue;
+                }
+
+                $key = $customObject->getAlias().'-'.$leadId;
+                if (!isset($cachedCustomItems[$key])) {
+                    $cachedCustomItems[$key] = $this->getCustomItems($customObject, $leadId);
+                }
+
+                $result = $this->getCustomFieldValue($customObject, $fieldAlias, $cachedCustomItems[$key]);
+
+                $customFieldValues[$condition['field']] = $result;
+            } catch (NotFoundException|InvalidCustomObjectFormatListException $e) {
+                continue;
+            }
+        }
+
+        return $customFieldValues;
+    }
+
+    /**
+     * @param array<mixed> $customItems
+     *
      * @throws InvalidCustomObjectFormatListException
      */
-    private function getCustomFieldValue(CustomObject $customObject, int $id, string $customFieldAlias): string
+    private function getCustomFieldValue(CustomObject $customObject, string $customFieldAlias, array $customItems): string
     {
-        $customItems = $this->getCustomItems($customObject, $id);
         $fieldValues = [];
 
         foreach ($customItems as $customItemData) {
@@ -411,55 +453,10 @@ class TokenSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * @param array<mixed> $filters
-     *
-     * @return array<mixed>
-     */
-    private function getCustomFieldDataForLead(array $filters, int $leadId): array
-    {
-        $customFieldValues = [];
-        foreach ($filters as $condition) {
-            try {
-                if ('custom_object' !== $condition['object']) {
-                    continue;
-                }
-
-                if ('cmf_' === substr($condition['field'], 0, 4)) {
-                    $customField  = $this->customFieldModel->fetchEntity(
-                        (int) explode('cmf_', $condition['field'])[1]
-                    );
-                    $customObject = $customField->getCustomObject();
-                    $fieldAlias   = $customField->getAlias();
-                } elseif ('cmo_' === substr($condition['field'], 0, 4)) {
-                    $customObject = $this->customObjectModel->fetchEntity(
-                        (int) explode('cmo_', $condition['field'])[1]
-                    );
-                    $fieldAlias   = 'name';
-                } else {
-                    continue;
-                }
-
-                $result = $this->getCustomFieldValue($customObject, $leadId, $fieldAlias);
-
-                $customFieldValues[$condition['field']] = $result;
-            } catch (NotFoundException|InvalidCustomObjectFormatListException $e) {
-                continue;
-            }
-        }
-
-        return $customFieldValues;
-    }
-
-    /**
      * @return array<mixed>
      */
     private function getCustomItems(CustomObject $customObject, int $leadId): array
     {
-        $key = $customObject->getAlias().'-'.$leadId;
-        if (isset($this->customItems[$key])) {
-            return $this->customItems[$key];
-        }
-
         $orderBy  = CustomItem::TABLE_ALIAS.'.id';
         $orderDir = 'DESC';
 
@@ -467,8 +464,7 @@ class TokenSubscriber implements EventSubscriberInterface
         $tableConfig->addParameter('customObjectId', $customObject->getId());
         $tableConfig->addParameter('filterEntityType', 'contact');
         $tableConfig->addParameter('filterEntityId', $leadId);
-        $this->customItems[$key] = $this->customItemModel->getArrayTableData($tableConfig);
 
-        return $this->customItems[$key];
+        return $this->customItemModel->getArrayTableData($tableConfig);
     }
 }
