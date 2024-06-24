@@ -374,7 +374,7 @@ class TokenSubscriber implements EventSubscriberInterface
      *
      * @return array<mixed>
      */
-    private function getCustomFieldDataForLead(array $filters, int $leadId): array
+    private function getCustomFieldDataForLead(array $filters, string $leadId): array
     {
         $customFieldValues = $cachedCustomItems = [];
 
