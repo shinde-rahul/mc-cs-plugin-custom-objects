@@ -455,7 +455,7 @@ class TokenSubscriber implements EventSubscriberInterface
     /**
      * @return array<mixed>
      */
-    private function getCustomItems(CustomObject $customObject, int $leadId): array
+    private function getCustomItems(CustomObject $customObject, string $leadId): array
     {
         $orderBy  = CustomItem::TABLE_ALIAS.'.id';
         $orderDir = 'DESC';
