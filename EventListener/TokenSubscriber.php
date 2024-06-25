@@ -352,14 +352,18 @@ class TokenSubscriber implements EventSubscriberInterface
             foreach ($data['filters'] as $filter) {
                 $customFieldValues = $this->getCustomFieldDataForLead($filter['filters'], (int) $lead['id']);
 
-                if (!empty($customFieldValues)) {
-                    $isCustomObject = true;
-                    $lead           = array_merge($lead, $customFieldValues);
-                }
+                foreach ($customFieldValues as $field => $values) {
+                    foreach ($values as $value) {
+                        if (!empty($value)) {
+                            $isCustomObject = true;
+                            $lead = array_merge($lead, [$field => $value]);
+                        }
 
-                if ($isCustomObject && $this->matchFilterForLead($filter['filters'], $lead)) {
-                    $filterContent = $filter['content'];
-                    break;
+                        if ($isCustomObject && $this->matchFilterForLead($filter['filters'], $lead)) {
+                            $filterContent = $filter['content'];
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -420,7 +424,7 @@ class TokenSubscriber implements EventSubscriberInterface
      *
      * @throws InvalidCustomObjectFormatListException
      */
-    private function getCustomFieldValue(CustomObject $customObject, string $customFieldAlias, array $customItems): string
+    private function getCustomFieldValue(CustomObject $customObject, string $customFieldAlias, array $customItems)
     {
         $fieldValues = [];
 
@@ -449,7 +453,7 @@ class TokenSubscriber implements EventSubscriberInterface
             }
         }
 
-        return $this->tokenFormatter->format($fieldValues, TokenFormatter::DEFAULT_FORMAT);
+        return $fieldValues;
     }
 
     /**
@@ -460,7 +464,7 @@ class TokenSubscriber implements EventSubscriberInterface
         $orderBy  = CustomItem::TABLE_ALIAS.'.id';
         $orderDir = 'DESC';
 
-        $tableConfig = new TableConfig(1, 1, $orderBy, $orderDir);
+        $tableConfig = new TableConfig(15, 1, $orderBy, $orderDir);
         $tableConfig->addParameter('customObjectId', $customObject->getId());
         $tableConfig->addParameter('filterEntityType', 'contact');
         $tableConfig->addParameter('filterEntityId', $leadId);
