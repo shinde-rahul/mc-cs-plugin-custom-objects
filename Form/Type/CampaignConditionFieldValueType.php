@@ -53,12 +53,12 @@ class CampaignConditionFieldValueType extends AbstractType
         }
 
         $optionAttr = array_combine(
-            array_map(fn($field) => $field->getLabel(), $fields),
+            array_map(fn ($field) => $field->getLabel(), $fields),
             array_map(
                 function ($field) {
                     return [
-                        'data-operators' => json_encode($field->getTypeObject()->getOperatorOptions()),
-                        'data-options' => json_encode($field->getChoices()),
+                        'data-operators'  => json_encode($field->getTypeObject()->getOperatorOptions()),
+                        'data-options'    => json_encode($field->getChoices()),
                         'data-field-type' => $field->getType(),
                     ];
                 },
