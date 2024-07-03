@@ -578,7 +578,7 @@ class CustomField extends FormEntity implements UniqueEntityInterface, UuidInter
             throw new NotFoundException("Label was not found for value {$value}");
         }
 
-        return $label;
+        return (string) $label;
     }
 
     /**
