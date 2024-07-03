@@ -350,7 +350,7 @@ class TokenSubscriber implements EventSubscriberInterface
 
             $isCustomObject = false;
             foreach ($data['filters'] as $filter) {
-                $customFieldValues = $this->getCustomFieldDataForLead($filter['filters'], (int) $lead['id']);
+                $customFieldValues = $this->getCustomFieldDataForLead($filter['filters'], (string) $lead['id']);
 
                 foreach ($customFieldValues as $field => $values) {
                     foreach ($values as $value) {
