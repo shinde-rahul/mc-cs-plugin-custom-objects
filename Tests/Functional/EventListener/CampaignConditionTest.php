@@ -93,6 +93,7 @@ class CampaignConditionTest extends MauticMysqlTestCase
 
         $options = $crawler->filter('#campaignevent_properties_field')->filter('option'); // ->attr('data-operators');
 
+        /** @var \DOMElement $option */
         foreach ($options as $option) {
             Assert::assertNotEmpty($option->getAttribute('data-operators'));
         }
