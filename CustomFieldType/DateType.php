@@ -16,6 +16,8 @@ use Symfony\Component\Form\DataTransformerInterface;
 
 class DateType extends AbstractCustomFieldType
 {
+    use DateOperatorTrait;
+
     /**
      * @var string
      */
@@ -68,17 +70,6 @@ class DateType extends AbstractCustomFieldType
     public function getEntityClass(): string
     {
         return CustomFieldValueDate::class;
-    }
-
-    /**
-     * @return mixed[]
-     */
-    public function getOperators(): array
-    {
-        $allOperators     = parent::getOperators();
-        $allowedOperators = array_flip(['=', '!=', 'gt', 'gte', 'lt', 'lte', 'empty', '!empty', 'between', '!between', 'inLast', 'inNext']);
-
-        return array_intersect_key($allOperators, $allowedOperators);
     }
 
     /**

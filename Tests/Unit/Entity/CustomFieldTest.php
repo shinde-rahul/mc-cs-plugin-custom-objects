@@ -316,6 +316,22 @@ class CustomFieldTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('Option B', $customField->valueToLabel('option_b'));
     }
 
+    public function testValueToLabelWithInteger(): void
+    {
+        $customField = new CustomField();
+        $optionB     = new CustomFieldOption();
+        $optionB->setLabel('1');
+        $optionB->setValue('1');
+        $customField->addOption($optionB);
+        $customField->setTypeObject(
+            new SelectType(
+                $this->createMock(TranslatorInterface::class),
+                $this->createMock(FilterOperatorProviderInterface::class)
+            )
+        );
+        $this->assertSame('1', $customField->valueToLabel('1'));
+    }
+
     public function testValueToLabelIfOptionNotFound(): void
     {
         $customField = new CustomField();
