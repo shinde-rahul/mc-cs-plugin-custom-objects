@@ -46,6 +46,7 @@ CustomObjects = {
             'autocomplete': valueField.attr('autocomplete'),
             'value': valueField.attr('value')
         };
+        let fieldType = selectedField.attr('data-field-type');
 
         operatorSelect.empty();
 
@@ -67,15 +68,37 @@ CustomObjects = {
                 newValueField.append(
                     mQuery("<option></option>")
                         .attr('value', optionValue)
-                        .attr('selected', valueField.attr('value') == optionValue)
+                        .attr('selected', valueField.attr('value') === optionValue)
                         .text(options[optionValue])
                 );
-            };
+            }
+        }
+
+        if (fieldType === 'date') {
+            newValueField.datetimepicker({
+                timepicker: false,
+                format: 'Y-m-d',
+                lazyInit: true,
+                validateOnBlur: false,
+                allowBlank: true,
+                scrollMonth: false,
+                scrollInput: false,
+                closeOnDateSelect: true
+            });
+        } else if (fieldType === 'datetime') {
+            newValueField.datetimepicker({
+                format: 'Y-m-d H:i',
+                lazyInit: true,
+                validateOnBlur: false,
+                allowBlank: true,
+                scrollMonth: false,
+                scrollInput: false
+            });
         }
 
         if (isEmptyOperator) {
-            newValueField.attr('readonly', true);
             newValueField.attr('value', '');
+            newValueField.attr('disabled', 'disabled');
         } else {
             newValueField.attr('value', valueFieldAttrs['value']);
         }
