@@ -13,6 +13,8 @@ use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Event\EmailSendEvent;
 use Mautic\EmailBundle\EventListener\MatchFilterForLeadTrait;
 use Mautic\LeadBundle\Entity\LeadList;
+use Mautic\LeadBundle\Exception\OperatorsNotFoundException;
+use Mautic\LeadBundle\Segment\OperatorOptions;
 use MauticPlugin\CustomObjectsBundle\CustomItemEvents;
 use MauticPlugin\CustomObjectsBundle\CustomObjectEvents;
 use MauticPlugin\CustomObjectsBundle\DTO\TableConfig;
@@ -352,18 +354,14 @@ class TokenSubscriber implements EventSubscriberInterface
             foreach ($data['filters'] as $filter) {
                 $customFieldValues = $this->getCustomFieldDataForLead($filter['filters'], (string) $lead['id']);
 
-                foreach ($customFieldValues as $field => $values) {
-                    foreach ($values as $value) {
-                        if (!empty($value)) {
-                            $isCustomObject = true;
-                            $lead = array_merge($lead, [$field => $value]);
-                        }
+                if (!empty($customFieldValues)) {
+                    $isCustomObject = true;
+                    $lead           = array_merge($lead, $customFieldValues);
+                }
 
-                        if ($isCustomObject && $this->matchFilterForLead($filter['filters'], $lead)) {
-                            $filterContent = $filter['content'];
-                            break;
-                        }
-                    }
+                if ($isCustomObject && $this->matchFilterForLeadInCustomObject($filter['filters'], $lead)) {
+                    $filterContent = $filter['content'];
+                    break;
                 }
             }
 
@@ -422,9 +420,9 @@ class TokenSubscriber implements EventSubscriberInterface
     /**
      * @param array<mixed> $customItems
      *
-     * @throws InvalidCustomObjectFormatListException
+     * @return array<mixed>
      */
-    private function getCustomFieldValue(CustomObject $customObject, string $customFieldAlias, array $customItems)
+    private function getCustomFieldValue(CustomObject $customObject, string $customFieldAlias, array $customItems): array
     {
         $fieldValues = [];
 
@@ -470,5 +468,176 @@ class TokenSubscriber implements EventSubscriberInterface
         $tableConfig->addParameter('filterEntityId', $leadId);
 
         return $this->customItemModel->getArrayTableData($tableConfig);
+    }
+
+    // We have a similar function in MatchFilterForLeadTrait since we are unable to alter anything in Mautic 4.4, hence there is some duplication of code.
+
+    /**
+     * @param array<mixed> $filter
+     * @param array<mixed> $lead
+     *
+     * @throws OperatorsNotFoundException
+     */
+    protected function matchFilterForLeadInCustomObject(array $filter, array $lead): bool
+    {
+        if (empty($lead['id'])) {
+            // Lead in generated for preview with faked data
+            return false;
+        }
+
+        $groups   = [];
+        $groupNum = 0;
+
+        foreach ($filter as $data) {
+            if (!array_key_exists($data['field'], $lead)) {
+                continue;
+            }
+
+            /*
+             * Split the filters into groups based on the glue.
+             * The first filter and any filters whose glue is
+             * "or" will start a new group.
+             */
+            if (0 === $groupNum || 'or' === $data['glue']) {
+                ++$groupNum;
+                $groups[$groupNum] = null;
+            }
+
+            /*
+             * If the group has been marked as false, there
+             * is no need to continue checking the others
+             * in the group.
+             */
+            if (false === $groups[$groupNum]) {
+                continue;
+            }
+
+            /*
+             * If we are checking the first filter in a group
+             * assume that the group will not match.
+             */
+            if (null === $groups[$groupNum]) {
+                $groups[$groupNum] = false;
+            }
+
+            $leadValues   = $lead[$data['field']];
+            $filterVal    = $data['filter'];
+            $subgroup     = null;
+
+            if (is_array($leadValues)) {
+                foreach ($leadValues as $leadVal) {
+                    if ($subgroup) {
+                        break;
+                    }
+
+                    switch ($data['type']) {
+                        case 'boolean':
+                            if (null !== $leadVal) {
+                                $leadVal = (bool) $leadVal;
+                            }
+
+                            if (null !== $filterVal) {
+                                $filterVal = (bool) $filterVal;
+                            }
+                            break;
+                        case 'datetime':
+                        case 'time':
+                            $leadValCount   = substr_count($leadVal, ':');
+                            $filterValCount = substr_count($filterVal, ':');
+
+                            if (2 === $leadValCount && 1 === $filterValCount) {
+                                $filterVal .= ':00';
+                            }
+                            break;
+                        case 'tags':
+                        case 'select':
+                        case 'multiselect':
+                            if (!is_null($leadVal) && !is_array($leadVal)) {
+                                $leadVal = explode('|', $leadVal);
+                            }
+                            if (!is_null($filterVal) && !is_array($filterVal)) {
+                                $filterVal = explode('|', $filterVal);
+                            }
+                            break;
+                        case 'number':
+                            $leadVal   = (int) $leadVal;
+                            $filterVal = (int) $filterVal;
+                            break;
+                    }
+
+                    switch ($data['operator']) {
+                        case '=':
+                            if ('boolean' === $data['type']) {
+                                $groups[$groupNum] = $leadVal === $filterVal;
+                            } else {
+                                $groups[$groupNum] = $leadVal == $filterVal;
+                            }
+                            break;
+                        case '!=':
+                            if ('boolean' === $data['type']) {
+                                $groups[$groupNum] = $leadVal !== $filterVal;
+                            } else {
+                                $groups[$groupNum] = $leadVal != $filterVal;
+                            }
+                            break;
+                        case 'gt':
+                            $groups[$groupNum] = $leadVal > $filterVal;
+                            break;
+                        case 'gte':
+                            $groups[$groupNum] = $leadVal >= $filterVal;
+                            break;
+                        case 'lt':
+                            $groups[$groupNum] = $leadVal < $filterVal;
+                            break;
+                        case 'lte':
+                            $groups[$groupNum] = $leadVal <= $filterVal;
+                            break;
+                        case 'empty':
+                            $groups[$groupNum] = empty($leadVal);
+                            break;
+                        case '!empty':
+                            $groups[$groupNum] = !empty($leadVal);
+                            break;
+                        case 'like':
+                            $filterVal         = str_replace(['.', '*', '%'], ['\.', '\*', '.*'], $filterVal);
+                            $groups[$groupNum] = 1 === preg_match('/'.$filterVal.'/', $leadVal);
+                            break;
+                        case '!like':
+                            $filterVal         = str_replace(['.', '*'], ['\.', '\*'], $filterVal);
+                            $filterVal         = str_replace('%', '.*', $filterVal);
+                            $groups[$groupNum] = 1 !== preg_match('/'.$filterVal.'/', $leadVal);
+                            break;
+                        case OperatorOptions::IN:
+                            $groups[$groupNum] = $this->checkLeadValueIsInFilter($leadVal, $filterVal, false);
+                            break;
+                        case OperatorOptions::NOT_IN:
+                            $groups[$groupNum] = $this->checkLeadValueIsInFilter($leadVal, $filterVal, true);
+                            break;
+                        case 'regexp':
+                            $groups[$groupNum] = 1 === preg_match('/'.$filterVal.'/i', $leadVal);
+                            break;
+                        case '!regexp':
+                            $groups[$groupNum] = 1 !== preg_match('/'.$filterVal.'/i', $leadVal);
+                            break;
+                        case 'startsWith':
+                            $groups[$groupNum] = 0 === strncmp($leadVal, $filterVal, strlen($filterVal));
+                            break;
+                        case 'endsWith':
+                            $endOfString       = substr($leadVal, strlen($leadVal) - strlen($filterVal));
+                            $groups[$groupNum] = 0 === strcmp($endOfString, $filterVal);
+                            break;
+                        case 'contains':
+                            $groups[$groupNum] = false !== strpos((string) $leadVal, (string) $filterVal);
+                            break;
+                        default:
+                            throw new OperatorsNotFoundException('Operator is not defined or invalid operator found.');
+                    }
+
+                    $subgroup = $groups[$groupNum];
+                }
+            }
+        }
+
+        return in_array(true, $groups);
     }
 }
