@@ -131,6 +131,76 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
         );
 
         $this->assertMatchWhere(
+            'test_value.value LIKE :par5',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'like',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value REGEXP :par6',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'regexp',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value LIKE :par7',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'startsWith',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value LIKE :par8',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'endsWith',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value LIKE :par9',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'contains',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
             'test_value.value IS NULL',
             [
                 'glue'       => 'and',

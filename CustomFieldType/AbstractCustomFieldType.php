@@ -65,7 +65,7 @@ abstract class AbstractCustomFieldType implements CustomFieldTypeInterface
     /**
      * @return mixed[]
      */
-    public function getOperators(): array
+    public function getOperators(string $context = null): array
     {
         return $this->filterOperatorProvider->getAllOperators();
     }

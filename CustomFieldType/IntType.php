@@ -58,7 +58,7 @@ class IntType extends AbstractCustomFieldType
     /**
      * @return mixed[]
      */
-    public function getOperators(): array
+    public function getOperators(string $context = null): array
     {
         $allOperators     = parent::getOperators();
         $allowedOperators = array_flip(['=', '!=', 'gt', 'gte', 'lt', 'lte', 'empty', '!empty', 'between', '!between']);
