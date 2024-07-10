@@ -30,4 +30,9 @@ trait DateOperatorTrait
 
         return array_intersect_key($allOperators, $allowedOperators);
     }
+
+    public function getOperatorsForSegment(): array
+    {
+        return parent::getOperators();
+    }
 }
