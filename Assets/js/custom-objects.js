@@ -46,7 +46,7 @@ CustomObjects = {
             'autocomplete': valueField.attr('autocomplete'),
             'value': valueField.attr('value')
         };
-        let fieldType = selectedField.attr('data-field-type');
+        const fieldType = selectedField.attr('data-field-type');
 
         operatorSelect.empty();
 
