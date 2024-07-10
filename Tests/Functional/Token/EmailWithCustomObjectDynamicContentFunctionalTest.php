@@ -71,7 +71,6 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
 
         $this->customFieldValues['nexon-multiselect']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('multiselect-test-field');
         $this->customFieldValues['nexon-multiselect']->setValue('option_a');
-        $this->customFieldValues['nexon-multiselect']->setValue('option_b');
 
         $this->customItems['nexon'] = $this->customItemModel->save($this->customItems['nexon']);
 
@@ -107,8 +106,14 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
                      ['nexon-multiselect', '"Option A"', 'in'],
                  ]),
                  'Custom Object Dynamic Content',
-             ],
-            [
+             ], [
+                'nexondatetime@acquia.com',
+                $this->buildDynamicContentArray([
+                    ['nexon-text', 'Tata', '='],
+                    ['nexon-datetime', '2024-07-01', 'gte'],
+                ]),
+                'Custom Object Dynamic Content',
+            ], [
                 'nexonequal@acquia.com',
                 $this->buildDynamicContentArray([
                     ['nexon-text', 'Tata', '='],
@@ -146,14 +151,7 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
                  'nexonendsWith@acquia.com',
                  $this->buildDynamicContentArray([['nexon-text', 'at', 'contains']]),
                  'Custom Object Dynamic Content',
-             ], [
-                'nexondatetime@acquia.com',
-                $this->buildDynamicContentArray([
-                    ['nexon-text', 'Tata', '='],
-                    ['nexon-datetime', '2024-07-01', 'gte'],
-                ]),
-                'Custom Object Dynamic Content',
-            ],
+             ],
         ] as $item) {
             $this->emailWithCustomObjectDynamicContent($item[0], $item[1], $item[2]);
         }
