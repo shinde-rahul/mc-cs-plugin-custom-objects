@@ -41,14 +41,14 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
     private $customObject;
 
     /**
-     * @var CustomItem
+     * @var array<CustomItem>
      */
-    private $customItem;
+    private $customItems;
 
     /**
-     * @var CustomFieldValueInterface
+     * @var array<CustomFieldValueInterface>
      */
-    private $textValue;
+    private $customFieldValues;
 
     protected function setUp(): void
     {
@@ -57,57 +57,100 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
         $this->customItemModel       = self::$container->get('mautic.custom.model.item');
         $this->customFieldValueModel = self::$container->get('mautic.custom.model.field.value');
 
-        $this->customObject = $this->createCustomObjectWithAllFields(self::$container, 'Car');
-        $this->customItem   = new CustomItem($this->customObject);
+        $this->customObject           = $this->createCustomObjectWithAllFields(self::$container, 'Car');
+        $this->customItems['nexon']   = new CustomItem($this->customObject);
 
-        $this->customItem->setName('Nexon');
-        $this->customFieldValueModel->createValuesForItem($this->customItem);
+        $this->customItems['nexon']->setName('Nexon');
+        $this->customFieldValueModel->createValuesForItem($this->customItems['nexon']);
 
-        $this->textValue       = $this->customItem->findCustomFieldValueForFieldAlias('text-test-field');
-        $this->textValue->setValue('Tata');
+        $this->customFieldValues['nexon-text']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('text-test-field');
+        $this->customFieldValues['nexon-text']->setValue('Tata');
 
-        $this->customItem = $this->customItemModel->save($this->customItem);
+        $this->customFieldValues['nexon-datetime']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('datetime-test-field');
+        $this->customFieldValues['nexon-datetime']->setValue('2024-07-01 13:29:43');
+
+        $this->customFieldValues['nexon-multiselect']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('multiselect-test-field');
+        $this->customFieldValues['nexon-multiselect']->setValue('option_a');
+
+        $this->customItems['nexon'] = $this->customItemModel->save($this->customItems['nexon']);
+
+        $this->customItems['fortuner']   = new CustomItem($this->customObject);
+
+        $this->customItems['fortuner']->setName('Fortuner');
+        $this->customFieldValueModel->createValuesForItem($this->customItems['fortuner']);
+
+        $this->customFieldValues['fortuner-text']       = $this->customItems['fortuner']->findCustomFieldValueForFieldAlias('text-test-field');
+        $this->customFieldValues['fortuner-text']->setValue('Toyota');
+
+        $this->customItems['fortuner'] = $this->customItemModel->save($this->customItems['fortuner']);
+
+        $this->customItems['city']   = new CustomItem($this->customObject);
+
+        $this->customItems['city']->setName('City');
+        $this->customFieldValueModel->createValuesForItem($this->customItems['city']);
+
+        $this->customFieldValues['city-text']       = $this->customItems['city']->findCustomFieldValueForFieldAlias('text-test-field');
+        $this->customFieldValues['city-text']->setValue('Honda');
+
+        $this->customItems['city'] = $this->customItemModel->save($this->customItems['city']);
     }
 
     public function testDynamicContentEmail(): void
     {
         foreach ([
-            [
+             [
+                 'nexonmultiselect@acquia.com',
+                 $this->buildDynamicContentArray([
+                     ['nexon-text', 'Tata', '='],
+                     ['nexon-datetime', '2024-07-01', 'gte'],
+                     ['nexon-multiselect', '"Option A"', 'in'],
+                 ]),
+                 'Custom Object Dynamic Content',
+             ], [
+                'nexondatetime@acquia.com',
+                $this->buildDynamicContentArray([
+                    ['nexon-text', 'Tata', '='],
+                    ['nexon-datetime', '2024-07-01', 'gte'],
+                ]),
+                'Custom Object Dynamic Content',
+            ], [
                 'nexonequal@acquia.com',
-                $this->buildDynamicContentArray('Tata', '='),
-                'Nexon Dynamic Content',
+                $this->buildDynamicContentArray([
+                    ['nexon-text', 'Tata', '='],
+                ]),
+                'Custom Object Dynamic Content',
             ], [
                 'nexonnotequal@acquia.com',
-                $this->buildDynamicContentArray('Toyota', '!='),
-                'Nexon Dynamic Content',
+                $this->buildDynamicContentArray([['nexon-text', 'Toyota', '!=']]),
+                'Custom Object Dynamic Content',
             ], [
                 'nexonempty@acquia.com',
-                $this->buildDynamicContentArray('', 'empty'),
+                $this->buildDynamicContentArray([['nexon-text', '', 'empty']]),
                 'Default Dynamic Content',
             ], [
                 'nexonnotempty@acquia.com',
-                $this->buildDynamicContentArray('', '!empty'),
-                'Nexon Dynamic Content',
+                $this->buildDynamicContentArray([['nexon-text', '', '!empty']]),
+                'Custom Object Dynamic Content',
             ], [
                 'nexonlike@acquia.com',
-                $this->buildDynamicContentArray('at', 'like'),
-                'Nexon Dynamic Content',
+                $this->buildDynamicContentArray([['nexon-text', 'at', 'like']]),
+                'Custom Object Dynamic Content',
             ], [
                 'nexonnotlike@acquia.com',
-                $this->buildDynamicContentArray('Toyota', '!like'),
-                'Nexon Dynamic Content',
+                $this->buildDynamicContentArray([['nexon-text', 'Toyota', '!like']]),
+                'Custom Object Dynamic Content',
             ], [
                 'nexonstartsWith@acquia.com',
-                $this->buildDynamicContentArray('Ta', 'startsWith'),
-                'Nexon Dynamic Content',
+                $this->buildDynamicContentArray([['nexon-text', 'Ta', 'startsWith']]),
+                'Custom Object Dynamic Content',
             ], [
                 'nexonendsWith@acquia.com',
-                $this->buildDynamicContentArray('ta', 'endsWith'),
-                'Nexon Dynamic Content',
+                $this->buildDynamicContentArray([['nexon-text', 'ta', 'endsWith']]),
+                'Custom Object Dynamic Content',
             ], [
                  'nexonendsWith@acquia.com',
-                 $this->buildDynamicContentArray('at', 'contains'),
-                 'Nexon Dynamic Content',
+                 $this->buildDynamicContentArray([['nexon-text', 'at', 'contains']]),
+                 'Custom Object Dynamic Content',
              ],
         ] as $item) {
             $this->emailWithCustomObjectDynamicContent($item[0], $item[1], $item[2]);
@@ -115,9 +158,11 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
     }
 
     /**
+     * @param array<mixed> $inputs
+     *
      * @return array<mixed>
      */
-    private function buildDynamicContentArray(string $filter, string $operator): array
+    private function buildDynamicContentArray(array $inputs): array
     {
         return [
             [
@@ -136,27 +181,18 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
                 'content'   => 'Default Dynamic Content',
                 'filters'   => [
                     [
-                        'content' => 'Nexon Dynamic Content',
-                        'filters' => [
-                            [
+                        'content' => 'Custom Object Dynamic Content',
+                        'filters' => array_map(function ($input) {
+                            return [
                                 'glue'     => 'and',
-                                'field'    => 'cmf_'.$this->textValue->getCustomField()->getId(),
+                                'field'    => 'cmf_'.$this->customFieldValues[$input[0]]->getCustomField()->getId(),
                                 'object'   => 'custom_object',
                                 'type'     => 'text',
-                                'filter'   => $filter,
-                                'display'  => $this->customObject->getAlias().': text-test-field',
-                                'operator' => $operator,
-                            ],
-                            [
-                                'glue'     => 'and',
-                                'field'    => 'cmo_'.$this->customObject->getId(),
-                                'object'   => 'custom_object',
-                                'type'     => 'text',
-                                'filter'   => 'Nexon',
-                                'display'  => $this->customObject->getAlias(),
-                                'operator' => '=',
-                            ],
-                        ],
+                                'filter'   => $input[1],
+                                'display'  => $this->customObject->getName().':'.$this->customFieldValues[$input[0]]->getCustomField()->getLabel(),
+                                'operator' => $input[2],
+                            ];
+                        }, $inputs),
                     ],
                 ],
             ],
@@ -174,7 +210,9 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
         $this->em->persist($email);
         $this->em->flush();
 
-        $this->customItemModel->linkEntity($this->customItem, 'contact', (int) $lead->getId());
+        $this->customItemModel->linkEntity($this->customItems['nexon'], 'contact', (int) $lead->getId());
+        $this->customItemModel->linkEntity($this->customItems['fortuner'], 'contact', (int) $lead->getId());
+        $this->customItemModel->linkEntity($this->customItems['city'], 'contact', (int) $lead->getId());
 
         $this->sendAndAssetText($email, $lead, $assertText);
     }
@@ -202,7 +240,7 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
         return $lead;
     }
 
-    public function sendAndAssetText(Email $email, Lead $lead, string $matchText): void
+    private function sendAndAssetText(Email $email, Lead $lead, string $matchText): void
     {
         /** @var EmailModel $emailModel */
         $emailModel = self::$container->get('mautic.email.model.email');
