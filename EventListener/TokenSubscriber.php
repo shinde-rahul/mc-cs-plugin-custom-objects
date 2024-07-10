@@ -48,6 +48,8 @@ class TokenSubscriber implements EventSubscriberInterface
     use MatchFilterForLeadTrait;
     use QueryBuilderManipulatorTrait;
 
+    private const CUSTOM_ITEMS_LIMIT = 15;
+
     /**
      * @var ConfigProvider
      */
@@ -462,7 +464,7 @@ class TokenSubscriber implements EventSubscriberInterface
         $orderBy  = CustomItem::TABLE_ALIAS.'.id';
         $orderDir = 'DESC';
 
-        $tableConfig = new TableConfig(15, 1, $orderBy, $orderDir);
+        $tableConfig = new TableConfig(self::CUSTOM_ITEMS_LIMIT, 1, $orderBy, $orderDir);
         $tableConfig->addParameter('customObjectId', $customObject->getId());
         $tableConfig->addParameter('filterEntityType', 'contact');
         $tableConfig->addParameter('filterEntityId', $leadId);
