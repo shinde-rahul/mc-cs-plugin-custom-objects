@@ -135,7 +135,8 @@ class TokenSubscriberTest extends TestCase
             $this->tokenParser,
             $this->eventModel,
             $this->eventDispatcher,
-            $this->tokenFormatter
+            $this->tokenFormatter,
+            15
         );
 
         $this->builderEvent                 = $this->createMock(BuilderEvent::class);
@@ -857,7 +858,8 @@ class TokenSubscriberTest extends TestCase
             $this->tokenParser,
             $this->eventModel,
             $this->eventDispatcher,
-            new TokenFormatter()
+            new TokenFormatter(),
+            15
         );
     }
 }
