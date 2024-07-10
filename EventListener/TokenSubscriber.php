@@ -549,11 +549,13 @@ class TokenSubscriber implements EventSubscriberInterface
                             break;
                         case 'datetime':
                         case 'time':
-                            $leadValCount   = substr_count($leadVal, ':');
-                            $filterValCount = substr_count($filterVal, ':');
+                            if (!is_null($leadVal) && !is_null($filterVal)) {
+                                $leadValCount   = substr_count($leadVal, ':');
+                                $filterValCount = substr_count($filterVal, ':');
 
-                            if (2 === $leadValCount && 1 === $filterValCount) {
-                                $filterVal .= ':00';
+                                if (2 === $leadValCount && 1 === $filterValCount) {
+                                    $filterVal .= ':00';
+                                }
                             }
                             break;
                         case 'tags':
