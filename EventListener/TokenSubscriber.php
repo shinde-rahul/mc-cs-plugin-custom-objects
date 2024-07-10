@@ -98,6 +98,11 @@ class TokenSubscriber implements EventSubscriberInterface
      */
     private $tokenFormatter;
 
+    /**
+     * @var int
+     */
+    private $leadCustomItemFetchLimit;
+
     public function __construct(
         ConfigProvider $configProvider,
         QueryFilterHelper $queryFilterHelper,
@@ -108,18 +113,20 @@ class TokenSubscriber implements EventSubscriberInterface
         TokenParser $tokenParser,
         EventModel $eventModel,
         EventDispatcherInterface $eventDispatcher,
-        TokenFormatter $tokenFormatter
+        TokenFormatter $tokenFormatter,
+        int $leadCustomItemFetchLimit
     ) {
-        $this->configProvider     = $configProvider;
-        $this->queryFilterHelper  = $queryFilterHelper;
-        $this->queryFilterFactory = $queryFilterFactory;
-        $this->customObjectModel  = $customObjectModel;
-        $this->customItemModel    = $customItemModel;
-        $this->customFieldModel   = $customFieldModel;
-        $this->tokenParser        = $tokenParser;
-        $this->eventModel         = $eventModel;
-        $this->eventDispatcher    = $eventDispatcher;
-        $this->tokenFormatter     = $tokenFormatter;
+        $this->configProvider                    = $configProvider;
+        $this->queryFilterHelper                 = $queryFilterHelper;
+        $this->queryFilterFactory                = $queryFilterFactory;
+        $this->customObjectModel                 = $customObjectModel;
+        $this->customItemModel                   = $customItemModel;
+        $this->customFieldModel                  = $customFieldModel;
+        $this->tokenParser                       = $tokenParser;
+        $this->eventModel                        = $eventModel;
+        $this->eventDispatcher                   = $eventDispatcher;
+        $this->tokenFormatter                    = $tokenFormatter;
+        $this->leadCustomItemFetchLimit          = $leadCustomItemFetchLimit;
     }
 
     /**
@@ -462,7 +469,7 @@ class TokenSubscriber implements EventSubscriberInterface
         $orderBy  = CustomItem::TABLE_ALIAS.'.id';
         $orderDir = 'DESC';
 
-        $tableConfig = new TableConfig(15, 1, $orderBy, $orderDir);
+        $tableConfig = new TableConfig($this->leadCustomItemFetchLimit, 1, $orderBy, $orderDir);
         $tableConfig->addParameter('customObjectId', $customObject->getId());
         $tableConfig->addParameter('filterEntityType', 'contact');
         $tableConfig->addParameter('filterEntityId', $leadId);
