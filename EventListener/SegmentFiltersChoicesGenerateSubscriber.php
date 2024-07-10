@@ -91,12 +91,20 @@ class SegmentFiltersChoicesGenerateSubscriber implements EventSubscriberInterfac
 
                 /** @var CustomField $customField */
                 foreach ($customObject->getCustomFields()->getIterator() as $customField) {
-                    if ($customField->getType() === $fieldTypes[HiddenType::NAME]) { // We don't want to show hidden types in filter list
+                    if ($customField->getType() === $fieldTypes[HiddenType::NAME]) {
+                        // We don't want to show hidden types in filter list
                         continue;
                     }
 
-                    $context = method_exists($this->typeOperatorProvider, 'getContext') ? $this->typeOperatorProvider->getContext() : '';
-                    $allowedOperators = $customField->getTypeObject()->getOperators($context);
+                    if (method_exists($this->typeOperatorProvider, 'getContext') &&
+                        method_exists($customField->getTypeObject(), 'getOperatorsForSegment') &&
+                        'segment' === $this->typeOperatorProvider->getContext()
+                    ) {
+                        $allowedOperators = $customField->getTypeObject()->getOperatorsForSegment();
+                    } else {
+                        $allowedOperators = $customField->getTypeObject()->getOperators();
+                    }
+
                     $typeOperators = $this->typeOperatorProvider->getOperatorsForFieldType($customField->getType());
                     $availableOperators = array_flip($typeOperators);
                     $operators = array_intersect_key($availableOperators, $allowedOperators);
