@@ -161,6 +161,7 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
 
     /**
      * @param array<mixed> $inputs
+     *
      * @return array<mixed>
      */
     private function buildDynamicContentArray(array $inputs): array
@@ -184,16 +185,16 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
                     [
                         'content' => 'Custom Object Dynamic Content',
                         'filters' => array_map(function ($input) {
-                                return [
-                                    'glue'     => 'and',
-                                    'field'    => 'cmf_'.$this->customFieldValues[$input[0]]->getCustomField()->getId(),
-                                    'object'   => 'custom_object',
-                                    'type'     => 'text',
-                                    'filter'   => $input[1],
-                                    'display'  => $this->customObject->getName().':'.$this->customFieldValues[$input[0]]->getCustomField()->getLabel(),
-                                    'operator' => $input[2],
-                                ];
-                            }, $inputs),
+                            return [
+                                'glue'     => 'and',
+                                'field'    => 'cmf_'.$this->customFieldValues[$input[0]]->getCustomField()->getId(),
+                                'object'   => 'custom_object',
+                                'type'     => 'text',
+                                'filter'   => $input[1],
+                                'display'  => $this->customObject->getName().':'.$this->customFieldValues[$input[0]]->getCustomField()->getLabel(),
+                                'operator' => $input[2],
+                            ];
+                        }, $inputs),
                     ],
                 ],
             ],
