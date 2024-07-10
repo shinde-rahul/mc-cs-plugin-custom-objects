@@ -23,14 +23,16 @@ trait DateOperatorTrait
     /**
      * @return mixed[]
      */
-    public function getOperators(string $context = null): array
+    public function getOperators(): array
     {
         $allOperators     = parent::getOperators();
-        if ('segment' === $context) {
-            return $allOperators;
-        }
         $allowedOperators = array_flip(['=', '!=', 'gt', 'gte', 'lt', 'lte', 'empty', '!empty', 'between', '!between', 'inLast', 'inNext']);
 
         return array_intersect_key($allOperators, $allowedOperators);
+    }
+
+    public function getOperatorsForSegment(): array
+    {
+        return parent::getOperators();
     }
 }

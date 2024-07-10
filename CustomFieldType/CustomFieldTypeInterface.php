@@ -60,7 +60,7 @@ interface CustomFieldTypeInterface
     /**
      * @return mixed[]
      */
-    public function getOperators(string $context = null): array;
+    public function getOperators(): array;
 
     /**
      * @return mixed[]
