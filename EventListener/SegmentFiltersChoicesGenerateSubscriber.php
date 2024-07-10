@@ -97,8 +97,8 @@ class SegmentFiltersChoicesGenerateSubscriber implements EventSubscriberInterfac
                     }
 
                     if (method_exists($this->typeOperatorProvider, 'getContext') &&
-                        method_exists($customField->getTypeObject(), 'getOperatorsForSegment') &&
-                        'segment' === $this->typeOperatorProvider->getContext()
+                        'segment' === $this->typeOperatorProvider->getContext() &&
+                        method_exists($customField->getTypeObject(), 'getOperatorsForSegment')
                     ) {
                         $allowedOperators = $customField->getTypeObject()->getOperatorsForSegment();
                     } else {
