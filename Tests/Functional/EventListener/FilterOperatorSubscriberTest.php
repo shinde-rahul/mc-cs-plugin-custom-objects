@@ -14,10 +14,13 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
+use MauticPlugin\CustomObjectsBundle\Tests\ProjectVersionTrait;
 use Symfony\Component\HttpFoundation\Request;
 
 class FilterOperatorSubscriberTest extends MauticMysqlTestCase
 {
+    use ProjectVersionTrait;
+
     public function testIfNewOperatorNotInCustomObjectsAddedinSegmentFilter()
     {
         $crawler         = $this->client->request(Request::METHOD_GET, '/s/segments/new/');
@@ -84,6 +87,10 @@ class FilterOperatorSubscriberTest extends MauticMysqlTestCase
 
     public function testCustomObjectSegmentFilterOperatorForDateField(): void
     {
+        if (!$this->isCloudProject()) {
+            $this->markTestSkipped('As context is not available for segment only in 4.4');
+        }
+
         $leadField = $this->createField('date_field', 'date');
 
         $fieldTypeProvider = self::$container->get('custom_field.type.provider');
