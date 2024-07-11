@@ -46,10 +46,17 @@ class CampaignConditionFieldValueType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $fields  = $this->customFieldModel->fetchCustomFieldsForObject($options['customObject']);
-        $choices = [];
+        $fields     = $this->customFieldModel->fetchCustomFieldsForObject($options['customObject']);
+        $choices    = [];
+        $optionAttr = [];
+
         foreach ($fields as $field) {
-            $choices[$field->getLabel()] = $field->getId();
+            $choices[$field->getLabel()]    = $field->getId();
+            $optionAttr[$field->getLabel()] = [
+                'data-operators'  => json_encode($field->getTypeObject()->getOperatorOptions()),
+                'data-options'    => json_encode($field->getChoices()),
+                'data-field-type' => $field->getType(),
+            ];
         }
 
         $builder->add(
@@ -62,16 +69,7 @@ class CampaignConditionFieldValueType extends AbstractType
                 'attr'     => [
                     'class' => 'form-control',
                 ],
-                'choice_attr' => array_map(
-                    function ($field) {
-                        return [
-                        'data-operators'  => json_encode($field->getTypeObject()->getOperatorOptions()),
-                        'data-options'    => json_encode($field->getChoices()),
-                        'data-field-type' => $field->getType(),
-                    ];
-                    },
-                    $fields
-                ),
+                'choice_attr' => $optionAttr,
             ]
         );
 

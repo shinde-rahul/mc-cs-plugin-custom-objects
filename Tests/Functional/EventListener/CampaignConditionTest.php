@@ -67,4 +67,35 @@ class CampaignConditionTest extends MauticMysqlTestCase
         Assert::assertSame('=', $body['event']['properties']['properties']['operator']);
         Assert::assertSame('unicorn', $body['event']['properties']['properties']['value']);
     }
+
+    public function testVerifyDataOperatorAttrIsAvailableForFields(): void
+    {
+        $customObject = $this->createCustomObjectWithAllFields(self::$container, 'Campaign test object');
+        $crawler      = $this->client->request(
+            Request::METHOD_GET,
+            's/campaigns/events/new',
+            [
+                'campaignId'      => 'mautic_041b2a401f680fb0b644654af5ba0892f31f0697',
+                'type'            => "custom_item.{$customObject->getId()}.fieldvalue",
+                'eventType'       => 'condition',
+                'anchor'          => 'leadsource',
+                'anchorEventType' => 'source',
+            ],
+            [],
+            $this->createAjaxHeaders()
+        );
+
+        Assert::assertTrue($this->client->getResponse()->isOk(), $this->client->getResponse()->getContent());
+
+        $html = json_decode($this->client->getResponse()->getContent(), true)['newContent'];
+
+        $crawler->addHtmlContent($html);
+
+        $options = $crawler->filter('#campaignevent_properties_field')->filter('option'); // ->attr('data-operators');
+
+        /** @var \DOMElement $option */
+        foreach ($options as $option) {
+            Assert::assertNotEmpty($option->getAttribute('data-operators'));
+        }
+    }
 }
