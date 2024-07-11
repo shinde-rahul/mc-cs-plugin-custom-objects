@@ -109,7 +109,7 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
                  $this->buildDynamicContentArray([
                      ['nexon-text', 'Tata', '='],
                      ['nexon-datetime', '2024-07-01', 'gte'],
-                     ['nexon-multiselect', '"Option A"', 'in'],
+                     ['nexon-multiselect', 'option_a', 'in'],
                  ]),
                  'Custom Object Dynamic Content',
              ], [
