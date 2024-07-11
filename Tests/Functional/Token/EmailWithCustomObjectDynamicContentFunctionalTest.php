@@ -188,17 +188,29 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
                 'filters'   => [
                     [
                         'content' => 'Custom Object Dynamic Content',
-                        'filters' => array_map(function ($input) {
-                            return [
-                                'glue'     => 'and',
-                                'field'    => 'cmf_'.$this->customFieldValues[$input[0]]->getCustomField()->getId(),
-                                'object'   => 'custom_object',
-                                'type'     => $input[3] ?? 'text',
-                                'filter'   => $input[1],
-                                'display'  => $this->customObject->getName().':'.$this->customFieldValues[$input[0]]->getCustomField()->getLabel(),
-                                'operator' => $input[2],
-                            ];
-                        }, $inputs),
+                        'filters' => array_merge(
+                            array_map(function ($input) {
+                                return [
+                                        'glue'     => 'and',
+                                        'field'    => 'cmf_'.$this->customFieldValues[$input[0]]->getCustomField()->getId(),
+                                        'object'   => 'custom_object',
+                                        'type'     => $input[3] ?? 'text',
+                                        'filter'   => $input[1],
+                                        'display'  => $this->customObject->getName().':'.$this->customFieldValues[$input[0]]->getCustomField()->getLabel(),
+                                        'operator' => $input[2],
+                                    ];
+                            }, $inputs),
+                            [
+                                [
+                                    'glue'     => 'and',
+                                    'field'    => 'email',
+                                    'object'   => 'lead',
+                                    'type'     => 'email',
+                                    'filter'   => null,
+                                    'operator' => '!empty',
+                                ],
+                            ]
+                        ),
                     ],
                 ],
             ],
