@@ -863,10 +863,12 @@ $coParams = [
                     'custom_object.query.filter.factory',
                     'mautic.custom.model.object',
                     'mautic.custom.model.item',
+                    'mautic.custom.model.field',
                     'custom_object.token.parser',
                     'mautic.campaign.model.event',
                     'event_dispatcher',
                     'custom_object.helper.token_formatter',
+                    '%mautic.custom_item_fetch_limit_per_lead%',
                 ],
             ],
             'custom_object.segments.decorator_delegate.subscriber'   => [
@@ -1188,10 +1190,11 @@ $coParams = [
         ],
     ],
     'parameters' => [
-        ConfigProvider::CONFIG_PARAM_ENABLED                                  => true,
-        ConfigProvider::CONFIG_PARAM_ITEM_VALUE_TO_CONTACT_RELATION_LIMIT     => ConfigProvider::CONFIG_PARAM_ITEM_VALUE_TO_CONTACT_RELATION_DEFAULT_LIMIT,
-        'custom_item_export_dir'                                              => '%kernel.root_dir%/../media/files/temp',
-        'custom_object_merge_filter'                                          => false,
+        ConfigProvider::CONFIG_PARAM_ENABLED                                           => true,
+        ConfigProvider::CONFIG_PARAM_ITEM_VALUE_TO_CONTACT_RELATION_LIMIT              => ConfigProvider::CONFIG_PARAM_ITEM_VALUE_TO_CONTACT_RELATION_DEFAULT_LIMIT,
+        'custom_item_export_dir'                                                       => '%kernel.root_dir%/../media/files/temp',
+        'custom_object_merge_filter'                                                   => false,
+        'custom_item_fetch_limit_per_lead'                                             => 15,
     ],
 ];
 
