@@ -452,7 +452,12 @@ class TokenSubscriber implements EventSubscriberInterface
                 if (empty($fieldValue->getValue())) {
                     $fieldValue->setValue($fieldValue->getCustomField()->getDefaultValue());
                 }
-                $fieldValues[] = $fieldValue->getValue();
+
+                if (in_array($fieldValue->getCustomField()->getType(), ['multiselect', 'select'])) {
+                    $fieldValues[] = $fieldValue->getValue();
+                } else {
+                    $fieldValues[] = $fieldValue->getCustomField()->getTypeObject()->valueToString($fieldValue);
+                }
             } catch (NotFoundException $e) {
                 // Custom field not found.
             }
@@ -528,6 +533,7 @@ class TokenSubscriber implements EventSubscriberInterface
             }
 
             $leadValues   = $lead[$data['field']];
+            $leadValues   = 'custom_object' === $data['object'] ? $leadValues : [$leadValues];
             $filterVal    = $data['filter'];
             $subgroup     = null;
 
