@@ -44,7 +44,7 @@ CustomObjects = {
             'id': valueField.attr('id'),
             'name': valueField.attr('name'),
             'autocomplete': valueField.attr('autocomplete'),
-            'value': valueField.attr('value')
+            'value': valueField.val()
         };
         const fieldType = selectedField.attr('data-field-type');
 
@@ -68,7 +68,7 @@ CustomObjects = {
                 newValueField.append(
                     mQuery("<option></option>")
                         .attr('value', optionValue)
-                        .attr('selected', valueField.attr('value') === optionValue)
+                        .attr('selected', valueField.val() === optionValue)
                         .text(options[optionValue])
                 );
             }
@@ -97,10 +97,11 @@ CustomObjects = {
         }
 
         if (isEmptyOperator) {
+            newValueField.val(null);
             newValueField.attr('value', '');
             newValueField.attr('disabled', 'disabled');
         } else {
-            newValueField.attr('value', valueFieldAttrs['value']);
+            newValueField.val(valueField.val());
         }
 
         newValueField.attr(valueFieldAttrs);
