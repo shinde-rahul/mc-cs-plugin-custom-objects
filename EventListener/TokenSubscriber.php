@@ -452,7 +452,7 @@ class TokenSubscriber implements EventSubscriberInterface
                 if (empty($fieldValue->getValue())) {
                     $fieldValue->setValue($fieldValue->getCustomField()->getDefaultValue());
                 }
-                $fieldValues[] = $fieldValue->getCustomField()->getTypeObject()->valueToString($fieldValue);
+                $fieldValues[] = $fieldValue->getValue();
             } catch (NotFoundException $e) {
                 // Custom field not found.
             }
