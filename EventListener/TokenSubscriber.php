@@ -429,8 +429,11 @@ class TokenSubscriber implements EventSubscriberInterface
      *
      * @return array<mixed>
      */
-    private function getCustomFieldValue(CustomObject $customObject, string $customFieldAlias, array $customItems): array
-    {
+    private function getCustomFieldValue(
+        CustomObject $customObject,
+        string $customFieldAlias,
+        array $customItems
+    ): array {
         $fieldValues = [];
 
         foreach ($customItems as $customItemData) {
@@ -482,7 +485,8 @@ class TokenSubscriber implements EventSubscriberInterface
         return $this->customItemModel->getArrayTableData($tableConfig);
     }
 
-    // We have a similar function in MatchFilterForLeadTrait since we are unable to alter anything in Mautic 4.4, hence there is some duplication of code.
+    // We have a similar function in MatchFilterForLeadTrait since we are unable to alter anything in Mautic 4.4,
+    // hence there is some duplication of code.
 
     /**
      * @param array<mixed> $filter
