@@ -72,6 +72,9 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
         $this->customFieldValues['nexon-multiselect']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('multiselect-test-field');
         $this->customFieldValues['nexon-multiselect']->setValue('option_a');
 
+        $this->customFieldValues['nexon-number']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('number-test-field');
+        $this->customFieldValues['nexon-number']->setValue(10);
+
         $this->customItems['nexon'] = $this->customItemModel->save($this->customItems['nexon']);
 
         $this->customItems['fortuner']   = new CustomItem($this->customObject);
@@ -102,14 +105,15 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
                  'nexonmultiselect@acquia.com',
                  $this->buildDynamicContentArray([
                      ['nexon-datetime', null, '!empty', 'datetime'],
+                     ['nexon-number', 12, 'lt', 'number'],
                  ]),
                  'Custom Object Dynamic Content',
              ], [
                  'nexonmultiselect@acquia.com',
                  $this->buildDynamicContentArray([
                      ['nexon-text', 'Tata', '='],
-                     ['nexon-datetime', '2024-07-01', 'gte'],
-                     ['nexon-multiselect', 'option_a', 'in'],
+                     ['nexon-datetime', '2024-07-01 00:00', 'gte', 'datetime'],
+                     ['nexon-multiselect', 'option_a', 'in', 'multiselect'],
                  ]),
                  'Custom Object Dynamic Content',
              ], [
