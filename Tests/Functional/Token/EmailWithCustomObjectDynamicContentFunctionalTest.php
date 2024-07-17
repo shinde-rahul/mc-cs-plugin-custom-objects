@@ -72,6 +72,11 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
         $this->customFieldValues['nexon-multiselect']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('multiselect-test-field');
         $this->customFieldValues['nexon-multiselect']->setValue('option_a');
 
+        $this->customFieldValues['nexon-select']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('select-test-field');
+
+        $this->customFieldValues['nexon-url']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('url-test-field');
+        $this->customFieldValues['nexon-url']->setValue('https://test.mautic.fr');
+
         $this->customFieldValues['nexon-number']       = $this->customItems['nexon']->findCustomFieldValueForFieldAlias('number-test-field');
         $this->customFieldValues['nexon-number']->setValue(10);
 
@@ -101,6 +106,20 @@ class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestC
     public function testDynamicContentEmail(): void
     {
         foreach ([
+             [
+                 'nexonlikeurl@acquia.com',
+                 $this->buildDynamicContentArray([
+                     ['nexon-url', 'tic.f', 'like'],
+                 ]),
+                 'Custom Object Dynamic Content',
+             ],
+             [
+                 'nexonselect@acquia.com',
+                 $this->buildDynamicContentArray([
+                     ['nexon-select', null, 'empty', 'select'],
+                 ]),
+                 'Custom Object Dynamic Content',
+             ],
              [
                  'nexonmultiselect@acquia.com',
                  $this->buildDynamicContentArray([
