@@ -571,7 +571,7 @@ class TokenSubscriber implements EventSubscriberInterface
                         case 'tags':
                         case 'select':
                         case 'multiselect':
-                            if (!is_null($leadVal) && !is_array($leadVal)) {
+                            if (!is_array($leadVal) && !empty($leadVal)) {
                                 $leadVal = explode('|', $leadVal);
                             }
                             if (!is_null($filterVal) && !is_array($filterVal)) {
@@ -618,13 +618,13 @@ class TokenSubscriber implements EventSubscriberInterface
                             $groups[$groupNum] = !empty($leadVal);
                             break;
                         case 'like':
-                            $filterVal         = str_replace(['.', '*', '%'], ['\.', '\*', '.*'], $filterVal);
-                            $groups[$groupNum] = 1 === preg_match('/'.$filterVal.'/', $leadVal);
+                            $matchVal          = str_replace(['.', '*', '%'], ['\.', '\*', '.*'], $filterVal);
+                            $groups[$groupNum] = 1 === preg_match('/'.$matchVal.'/', $leadVal);
                             break;
                         case '!like':
-                            $filterVal         = str_replace(['.', '*'], ['\.', '\*'], $filterVal);
-                            $filterVal         = str_replace('%', '.*', $filterVal);
-                            $groups[$groupNum] = 1 !== preg_match('/'.$filterVal.'/', $leadVal);
+                            $matchVal          = str_replace(['.', '*'], ['\.', '\*'], $filterVal);
+                            $matchVal          = str_replace('%', '.*', $matchVal);
+                            $groups[$groupNum] = 1 !== preg_match('/'.$matchVal.'/', $leadVal);
                             break;
                         case OperatorOptions::IN:
                             $groups[$groupNum] = $this->checkLeadValueIsInFilter($leadVal, $filterVal, false);
