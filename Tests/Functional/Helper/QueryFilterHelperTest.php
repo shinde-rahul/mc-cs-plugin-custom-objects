@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Helper;
 
+use DateTime;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\LeadBundle\Segment\ContactSegmentFilterFactory;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder;
@@ -244,9 +245,27 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
                 ],
             ]
         );
+
+        $this->assertMatchWhere(
+            'test_value.value >= :pard',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_object_product')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'date',
+                'operator'   => 'gte',
+                'properties' => [
+                    'filter' => [
+                        'dateTypeMode' => 'absolute',
+                        'absoluteDate' => 'yesterday',
+                    ],
+                ],
+            ],
+            (new DateTime('yesterday'))->format('Y-m-d')
+        );
     }
 
-    protected function assertMatchWhere(string $expectedWhere, array $filter): void
+    protected function assertMatchWhere(string $expectedWhere, array $filter, ?string $expectedValue = null): void
     {
         $unionQueryContainer = new UnionQueryContainer();
         $qb                  = new QueryBuilder($this->em->getConnection());
@@ -259,7 +278,12 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
         );
 
         $unionQueryContainer->rewind();
+
         $whereResponse = (string) $unionQueryContainer->current()->getQueryPart('where');
+
         $this->assertSame($expectedWhere, $whereResponse);
+        if ($expectedValue) {
+            $this->assertSame($expectedValue, current($unionQueryContainer->current()->getParameters()));
+        }
     }
 }
