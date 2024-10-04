@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Helper;
 
+use DateTime;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\LeadBundle\Segment\ContactSegmentFilterFactory;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder;
@@ -201,6 +202,76 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
         );
 
         $this->assertMatchWhere(
+            'test_value.value LIKE :par5',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'like',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value REGEXP :par6',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'regexp',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value LIKE :par7',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'startsWith',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value LIKE :par8',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'endsWith',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value LIKE :par9',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_field1')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'contains',
+                'properties' => [
+                    'filter' => '2024',
+                ],
+            ]
+        );
+
+        $this->assertMatchWhere(
             'test_value.value BETWEEN 0 AND 10',
             [
                 'glue'       => 'and',
@@ -261,9 +332,45 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
                 ],
             ]
         );
+
+        $this->assertMatchWhere(
+            'test_value.value >= :pard',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_object_product')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'date',
+                'operator'   => 'gte',
+                'properties' => [
+                    'filter' => [
+                        'dateTypeMode' => 'absolute',
+                        'absoluteDate' => 'yesterday',
+                    ],
+                ],
+            ],
+            (new DateTime('yesterday'))->format('Y-m-d')
+        );
+
+        $this->assertMatchWhere(
+            'test_value.value <= :pare',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_object_product')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'lte',
+                'properties' => [
+                    'filter' => [
+                        'dateTypeMode' => 'absolute',
+                        'absoluteDate' => 'tomorrow',
+                    ],
+                ],
+            ],
+            (new DateTime('tomorrow'))->format('Y-m-d 23:59:59')
+        );
     }
 
-    protected function assertMatchWhere(string $expectedWhere, array $filter): void
+    protected function assertMatchWhere(string $expectedWhere, array $filter, ?string $expectedValue = null): void
     {
         $unionQueryContainer = new UnionQueryContainer();
         $qb                  = new QueryBuilder($this->em->getConnection());
@@ -276,7 +383,12 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
         );
 
         $unionQueryContainer->rewind();
+
         $whereResponse = (string) $unionQueryContainer->current()->getQueryPart('where');
+
         $this->assertSame($expectedWhere, $whereResponse);
+        if ($expectedValue) {
+            $this->assertSame($expectedValue, current($unionQueryContainer->current()->getParameters()));
+        }
     }
 }

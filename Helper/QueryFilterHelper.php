@@ -86,6 +86,7 @@ class QueryFilterHelper
         ContactSegmentFilter $filter,
         bool $filterAlreadyNegated = false
     ): void {
+        $filterValue = $filter->getParameterValue();
         foreach ($unionQueryContainer as $segmentQueryBuilder) {
             $valueParameter = $this->randomParameterNameService->generateRandomParameterName();
             $expression     = $this->getCustomValueValueExpression(
@@ -94,14 +95,14 @@ class QueryFilterHelper
                 $filter,
                 $valueParameter,
                 $filterAlreadyNegated,
-                $filter->getParameterValue()
+                $filterValue
             );
 
             $this->addOperatorExpression(
                 $segmentQueryBuilder,
                 $expression,
                 $filter->getOperator(),
-                $filter->getParameterValue(),
+                $filterValue,
                 $valueParameter
             );
         }
