@@ -263,6 +263,24 @@ class QueryFilterHelperTest extends MauticMysqlTestCase
             ],
             (new DateTime('yesterday'))->format('Y-m-d')
         );
+
+        $this->assertMatchWhere(
+            'test_value.value <= :pare',
+            [
+                'glue'       => 'and',
+                'field'      => 'cmf_'.$this->getFixtureById('custom_object_product')->getId(),
+                'object'     => 'custom_object',
+                'type'       => 'datetime',
+                'operator'   => 'lte',
+                'properties' => [
+                    'filter' => [
+                        'dateTypeMode' => 'absolute',
+                        'absoluteDate' => 'tomorrow',
+                    ],
+                ],
+            ],
+            (new DateTime('tomorrow'))->format('Y-m-d 23:59:59')
+        );
     }
 
     protected function assertMatchWhere(string $expectedWhere, array $filter, ?string $expectedValue = null): void
